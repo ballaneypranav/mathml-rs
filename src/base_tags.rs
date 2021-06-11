@@ -2,32 +2,29 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Eq, PartialEq, Deserialize, Clone)]
 #[serde(rename = "math", rename_all = "camelCase")]
-//#[serde(untagged)]
 pub enum MathNode {
     Op(BuiltinOp),
-    String,
     Apply(Vec<MathNode>),
-    //Apply(String, Vec<BuiltinOp>),
-    //Op(BuiltinOp),
-    //Text(String),
-    //Root(Vec<MathNode>),
-    //Ci(Vec<MathNode>),
+    Text(String),
+    #[serde(rename = "math")]
+    Root(Vec<MathNode>),
+    Ci(Vec<MathNode>),
     //Csymbol {
     //definition_url: String,
     //encoding: Option<String>,
     //children: Vec<MathNode>,
     //},
     //Cn {
-    //num_type: numbers::NumType,
-    //base: u32,
-    //definition_url: Option<String>,
-    //encoding: Option<String>,
-    //attributes: Option<HashMap<String, String>>,
+    ////num_type: numbers::NumType,
+    //num_type: String,
+    ////base: u32,
+    ////definition_url: Option<String>,
+    ////encoding: Option<String>,
+    ////attributes: Option<HashMap<String, String>>,
     //},
     //Comment(String),
     //PI(String, Option<String>),
-    //Apply(Vec<MathNode>),
-    Math(Vec<MathNode>),
+    //Math(String, Box<MathNode>),
 }
 
 #[derive(Deserialize, Debug, Serialize, Eq, PartialEq, Clone)]
