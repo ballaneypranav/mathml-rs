@@ -1,19 +1,17 @@
-[package]
-name = "quick-mathml"
-version = "0.1.0"
-authors = ["Pranav Ballaney <ballaneypranav@gmail.com>"]
-edition = "2018"
+[workspace]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+members = [
+    "mathml-rs",
+    "mathml-macros"
+]
+#[package]
+#name = "mathml-rs"
+#version = "0.1.0"
+#authors = ["Pranav Ballaney <ballaneypranav@gmail.com>"]
+#edition = "2018"
 
-[dependencies]
-quick-xml = {version = "0.22.0", features = ["serialize"] }
-serde = {version = "1.0.126", features = [ "derive" ] }
+## See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[lib]
-name = "quick_mathml"
-path = "src/lib.rs"
-
-[[bin]]
-name = "quick_mathml"
-path = "src/bin.rs"
+#[dependencies]
+#quick-xml = "0.22.0"
+#approx = "0.3.2"
