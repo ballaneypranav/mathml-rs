@@ -4,15 +4,15 @@ pub type TagIndex = usize;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum MathNode {
-    Apply(Vec<MathNode>),
+    Apply(Vec<TagIndex>),
     Op(BuiltinOp),
     Text(String),
-    Root(Vec<MathNode>),
-    Ci(Vec<MathNode>),
+    Root(Vec<TagIndex>),
+    Ci(Option<String>),
     Csymbol {
         definition_url: String,
         encoding: Option<String>,
-        children: Vec<MathNode>,
+        children: Vec<TagIndex>,
     },
     Cn {
         num_type: NumType,
@@ -27,6 +27,9 @@ pub enum MathNode {
 impl MathNode {
     pub fn new_root() -> Self {
         MathNode::Root(Vec::new())
+    }
+    pub fn new_apply() -> Self {
+        MathNode::Apply(Vec::new())
     }
 }
 
