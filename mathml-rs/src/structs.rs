@@ -1,41 +1,77 @@
 use approx;
 
-pub type TagIndex = usize;
+pub type NodeIndex = usize;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum MathNode {
-    Apply(Vec<TagIndex>),
-    Op(BuiltinOp),
-    Text(String),
-    Root(Vec<TagIndex>),
-    Ci(Option<String>),
-    Csymbol {
-        definition_url: String,
-        encoding: Option<String>,
-        children: Vec<TagIndex>,
-    },
-    Cn {
-        num_type: NumType,
-        base: u32,
-        definition_url: Option<String>,
-        encoding: Option<String>,
-    },
-    Comment(String),
-    PI(String, Option<String>),
+    Apply(Apply),
+    Op(OpNode),
+    //Text(String),
+    Root(Root),
+    Ci(Ci),
+    Cn(Cn),
 }
 
 impl MathNode {
-    pub fn new_root() -> Self {
-        MathNode::Root(Vec::new())
+    pub fn new_op(op: Op) -> Self {
+        MathNode::Op(OpNode {
+            op: Some(op),
+            parent: None,
+        })
     }
-    pub fn new_apply() -> Self {
-        MathNode::Apply(Vec::new())
+}
+
+#[derive(Default, Debug, Clone, Eq, PartialEq)]
+pub struct Apply {
+    pub children: Vec<NodeIndex>,
+    pub parent: Option<NodeIndex>,
+}
+
+impl Apply {
+    pub fn new() -> Self {
+        Apply {
+            children: Vec::new(),
+            parent: None,
+        }
     }
+}
+
+#[derive(Default, Debug, Clone, Eq, PartialEq)]
+pub struct Root {
+    pub children: Vec<NodeIndex>,
+    pub parent: Option<NodeIndex>,
+}
+
+#[derive(Default, Debug, Clone, Eq, PartialEq)]
+pub struct Ci {
+    pub text: Option<String>,
+    pub parent: Option<NodeIndex>,
+}
+
+impl Ci {
+    pub fn with_text(s: String) -> Self {
+        Ci {
+            text: Some(s),
+            parent: None,
+        }
+    }
+}
+
+#[derive(Default, Debug, Clone, Eq, PartialEq)]
+pub struct Cn {
+    pub number: Option<String>,
+    pub parent: Option<NodeIndex>,
+}
+
+#[derive(Default, Debug, Clone, Eq, PartialEq)]
+pub struct OpNode {
+    pub op: Option<Op>,
+    pub parent: Option<NodeIndex>,
 }
 
 impl Default for MathNode {
     fn default() -> Self {
-        MathNode::Root(Vec::new())
+        MathNode::Root(Root::default())
     }
 }
 
@@ -69,7 +105,7 @@ impl PartialEq for NumType {
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub enum BuiltinOp {
+pub enum Op {
     Factorial,
     Minus,
     Abs,
