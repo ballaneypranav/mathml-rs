@@ -2,7 +2,7 @@ use approx;
 
 pub type NodeIndex = usize;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum MathNode {
     Apply(Apply),
     Op(OpNode),
@@ -27,15 +27,6 @@ pub struct Apply {
     pub parent: Option<NodeIndex>,
 }
 
-impl Apply {
-    pub fn new() -> Self {
-        Apply {
-            children: Vec::new(),
-            parent: None,
-        }
-    }
-}
-
 #[derive(Default, Debug, Clone, Eq, PartialEq)]
 pub struct Root {
     pub children: Vec<NodeIndex>,
@@ -57,9 +48,12 @@ impl Ci {
     }
 }
 
-#[derive(Default, Debug, Clone, Eq, PartialEq)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct Cn {
-    pub number: Option<String>,
+    pub integer: Option<i32>,
+    pub real: Option<f32>,
+    pub double: Option<f64>,
+    pub r#type: Option<String>,
     pub parent: Option<NodeIndex>,
 }
 

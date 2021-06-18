@@ -24,7 +24,7 @@ pub fn attach(input: TokenStream) -> TokenStream {
     let tokens = quote! {
         match container[current] {
             Tag::#parent (ref mut parent) => {
-                let #parent_field_ident = #tag::new();
+                let #parent_field_ident = #tag::default();
                 new_tag = Some(Tag::#tag(#parent_field_ident));
                 current = container_len;
                 parent.#parent_field_ident = Some(current.clone());
@@ -71,6 +71,11 @@ pub fn push(input: TokenStream) -> TokenStream {
     let tag = &input.tag;
     let tag_str = input.tag.to_string();
     let parents = &input.parents;
+    // create strings for debugging
+    let mut parent_str: Vec<String> = Vec::new();
+    for parent in parents {
+        parent_str.push(parent.to_string());
+    }
 
     // attributes field names and types
     let attr_idents = input.attr_idents;
@@ -79,41 +84,54 @@ pub fn push(input: TokenStream) -> TokenStream {
     // also need strings for matching tokens
     let mut attr_str: Vec<String> = Vec::new();
     for ident in &attr_idents {
-        attr_str.push(String::from(ident.to_string()));
+        let mut ident_str = ident.to_string();
+        if ident_str.starts_with("r#") {
+            ident_str = ident_str.trim_start_matches("r#").to_string();
+        }
+        //println!("Attribute to be parsed for {}: {}", tag_str, &ident_str);
+        attr_str.push(ident_str);
     }
 
     let tokens = quote! {
-        // match the current tag
-        match container[current] {
-            // with the parent
-            // TODO: repeat for multiple possible parents
-            #(MathNode::#parents (ref mut parent) => {
-                // parse any attributes, keeping their types in mind
-                //let attributes = e.attributes().map(|a| a.unwrap()).collect::<Vec<_>>();
-                //println!("{:?}", attributes);
-                //for attribute in attributes {
-                    //let key = str::from_utf8(attribute.key).unwrap();
-                    //let value = attribute.unescape_and_decode_value(&reader).unwrap();
-                    //match key {
-                        //#(#attr_str => {
-                            //#parent_field_ident.#attr_idents =
-                                //Some(value.parse::<#attr_types>().expect("Incorrect type"));
-                        //})*
-                        //_ => {}
-                    //}
-                //}
-
-                // create Tag enum object
-                new_tag = Some(MathNode::#tag(#tag::default()));
-                // update current pointer (which is really an int)
-                current = container_len;
-                // update parent pointer of new tag
-                parent.children.push(current.clone());
-                // push current pointer to stack
-                stack.push(current.clone());
-                //println!("Opened {}", #tag_str);
-            })*
-            _ => {}
+        {
+            // create new object
+            let mut new_obj = #tag::default();
+            // parse any attributes, keeping their types in mind
+            let attributes = e.attributes().map(|a| a.unwrap()).collect::<Vec<_>>();
+            //println!("{:?}", attributes);
+            for attribute in attributes {
+                let key = std::str::from_utf8(attribute.key).unwrap();
+                let value = attribute.unescape_and_decode_value(&reader).unwrap();
+                match key {
+                    #(#attr_str => {
+                        new_obj.#attr_idents =
+                            Some(value.parse::<#attr_types>().expect("Incorrect type"));
+                    })*
+                    _ => {
+                        //println!("{:?}", #attr_str);
+                        panic!("Attribute {} not parsed for {}", key, #tag_str);
+                    }
+                }
+            }
+            // match the current tag
+            match container[current] {
+                // with the parent
+                #(MathNode::#parents (ref mut parent) => {
+                    new_tag = Some(MathNode::#tag(new_obj));
+                    // update current pointer (which is really an int)
+                    current = container_len;
+                    // update parent pointer of new tag
+                    parent.children.push(current.clone());
+                    // push current pointer to stack
+                    stack.push(current.clone());
+                    //println!("Opened {}", #tag_str);
+                })*
+                _ => {
+                    //println!("Tried to open {} but failed", #tag_str);
+                    //println!("Currently in {:?}", container[current]);
+                    //#(println!("Parent not found: {:?}", #parent_str);)*
+                }
+            }
         }
     };
     tokens.into()
@@ -268,7 +286,8 @@ pub fn close(input: TokenStream) -> TokenStream {
                 //println!("Closing {}", #tag_str);
             }
             _ => {
-                println!("Trying to close {} but currently in {:?}", #tag_str, container[current]);
+                println!("{:#?}", container);
+                panic!("Trying to close {} but currently in {:?}", #tag_str, container[current]);
             }
         }
     };

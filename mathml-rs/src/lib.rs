@@ -2,7 +2,6 @@ use quick_xml::events::Event;
 use quick_xml::Reader;
 use std::fs::File;
 use std::io::BufReader;
-use std::str;
 pub mod structs;
 use mathml_macros::*;
 pub use structs::*;
@@ -13,7 +12,6 @@ pub fn parse_fragment(
     reader.trim_text(true);
     reader.expand_empty_elements(true);
     let mut buf = Vec::new();
-    let mut txt = Vec::new();
     let mut stack: Vec<NodeIndex> = Vec::new();
 
     let mut container = Vec::new();
@@ -34,8 +32,11 @@ pub fn parse_fragment(
                     b"times" => add_op![Times to Apply],
                     b"power" => add_op![Power to Apply],
                     b"ci" => push![Ci into Apply],
+                    b"cn" => push![Cn with
+                                        r#type as String,
+                                    into Apply],
                     _ => {
-                        //println!("Tag not parsed: {}", str::from_utf8(e.name()).unwrap());
+                        panic!("Tag not parsed: {}", std::str::from_utf8(e.name()).unwrap());
                     }
                 }
                 match new_tag {
@@ -51,24 +52,30 @@ pub fn parse_fragment(
                 b"times" => close![Op],
                 b"power" => close![Op],
                 b"ci" => close![Ci],
+                b"cn" => close![Cn],
                 b"math" => break,
                 _ => {}
             },
             // unescape and decode the text event using the reader encoding
-            Ok(Event::Text(e)) => match container[current] {
-                MathNode::Ci(..) => {
-                    let s = e.unescape_and_decode(&reader).unwrap();
-                    container[current] = MathNode::Ci(Ci::with_text(s));
+            Ok(Event::Text(e)) => {
+                let s = e.unescape_and_decode(&reader).unwrap();
+                match container[current] {
+                    MathNode::Ci(..) => {
+                        container[current] = MathNode::Ci(Ci::with_text(s));
+                    }
+                    MathNode::Cn(ref mut cn) => match cn.r#type.as_deref() {
+                        Some("integer") => {
+                            cn.integer = Some(s.parse::<i32>().expect("Incorrect type"))
+                        }
+                        _ => {
+                            panic!("Math type did not match for cn: {:?}", cn);
+                        }
+                    },
+                    _ => {
+                        panic!("Text not parsed in {:?}: {}", container[current], s);
+                    }
                 }
-                _ => {
-                    //println!(
-                    //"hello {:?}, {:?}",
-                    //container[current],
-                    //e.unescape_and_decode(&reader).unwrap()
-                    //);
-                    txt.push(e.unescape_and_decode(&reader).unwrap());
-                }
-            },
+            }
             Ok(Event::Eof) => break, // exits the loop when reaching end of file
             Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
             _ => (), // There are several other `Event`s we do not consider here
