@@ -3,73 +3,82 @@ use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 use syn::parse::{Parse, ParseStream};
-use syn::punctuated::Punctuated;
 use syn::{parse_macro_input, Ident, Result, Token, Type};
 
 mod kw {
     syn::custom_keyword!(to);
     syn::custom_keyword!(with);
-    syn::custom_keyword!(into);
 }
 
 #[proc_macro]
 pub fn attach(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as AttachInput);
+    // parse input
+    let input = parse_macro_input!(input as OpenInput);
 
-    let tag = &input.tag;
-    let parent_field = input.tag.to_string().to_case(Case::Snake);
-    let parent_field_ident = Ident::new(&parent_field, Span::call_site());
-    let parent = &input.parents[0];
+    // create new node
+    let instantiation_expr;
+    let pass_object_expr;
+    let tag_str;
+    match input.tag {
+        Tag::Ident(tag) => {
+            instantiation_expr = quote! {
+                let new_node = #tag::default();
+            };
+            pass_object_expr = quote! {
+                new_tag = Some(MathNode::#tag(new_node));
+            };
 
-    let tokens = quote! {
-        match container[current] {
-            Tag::#parent (ref mut parent) => {
-                let #parent_field_ident = #tag::default();
-                new_tag = Some(Tag::#tag(#parent_field_ident));
-                current = container_len;
-                parent.#parent_field_ident = Some(current.clone());
-                stack.push(current.clone());
+            tag_str = tag.to_string();
+        }
+        Tag::Enum(enum_name, enum_type) => {
+            let enum_str = enum_name.to_string().to_lowercase();
+            let fn_str = format!("new_{}", enum_str);
+            let fn_ident = Ident::new(&fn_str, Span::call_site());
+
+            instantiation_expr = quote! {};
+
+            pass_object_expr = quote! {
+                new_tag = Some(MathNode::#fn_ident(#enum_name::#enum_type));
+            };
+
+            tag_str = format!("{}::{}", enum_name.to_string(), enum_type.to_string());
+        }
+    }
+
+    // attributes field names and types
+    let attr_idents = input.attr_idents;
+    let attr_types = input.attr_types;
+    // also need strings for matching tokens
+    let mut attr_str = Vec::new();
+    for ident in &attr_idents {
+        let mut ident_str = ident.to_string();
+        if ident_str.starts_with("r#") {
+            ident_str = ident_str.trim_start_matches("r#").to_string()
+        }
+        attr_str.push(ident_str);
+    }
+
+    // create code to parse attributes
+    let store_attr = quote! {
+        // parse any attributes, keeping their types in mind
+        let attributes = e.attributes().map(|a| a.unwrap()).collect::<Vec<_>>();
+        //println!("{:?}", attributes);
+        for attribute in attributes {
+            let key = std::str::from_utf8(attribute.key).unwrap();
+            let value = attribute.unescape_and_decode_value(&reader).unwrap();
+            match key {
+                #(#attr_str => {
+                    new_obj.#attr_idents =
+                        Some(value.parse::<#attr_types>().expect("Incorrect type"));
+                })*
+                _ => {
+                    //println!("{:?}", #attr_str);
+                    panic!("Attribute {} not parsed for {}", key, #tag_str);
+                }
             }
-            _ => {}
         }
     };
-    tokens.into()
-}
 
-#[derive(Debug)]
-struct AttachInput {
-    tag: Ident,
-    parents: Vec<Ident>,
-    attrs: Vec<Ident>,
-}
-
-impl Parse for AttachInput {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let tag = syn::Ident::parse(input)?;
-        let lookahead = input.lookahead1();
-        let mut attrs = Vec::new();
-        if lookahead.peek(kw::with) {
-            let _with = input.parse::<kw::with>()?;
-            let punctuated_attrs = Punctuated::<Ident, Token![,]>::parse_separated_nonempty(input)?;
-            attrs = punctuated_attrs.into_iter().collect();
-        }
-        let _to = input.parse::<kw::to>()?;
-        let parent = syn::Ident::parse(input)?;
-        Ok(AttachInput {
-            tag,
-            parents: vec![parent],
-            attrs,
-        })
-    }
-}
-
-#[proc_macro]
-pub fn push(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as PushInput);
-    //println!("{:?}", input);
-
-    let tag = &input.tag;
-    let tag_str = input.tag.to_string();
     let parents = &input.parents;
     // create strings for debugging
     let mut parent_str: Vec<String> = Vec::new();
@@ -77,47 +86,16 @@ pub fn push(input: TokenStream) -> TokenStream {
         parent_str.push(parent.to_string());
     }
 
-    // attributes field names and types
-    let attr_idents = input.attr_idents;
-    let attr_types = input.attr_types;
-
-    // also need strings for matching tokens
-    let mut attr_str: Vec<String> = Vec::new();
-    for ident in &attr_idents {
-        let mut ident_str = ident.to_string();
-        if ident_str.starts_with("r#") {
-            ident_str = ident_str.trim_start_matches("r#").to_string();
-        }
-        //println!("Attribute to be parsed for {}: {}", tag_str, &ident_str);
-        attr_str.push(ident_str);
-    }
-
     let tokens = quote! {
         {
             // create new object
-            let mut new_obj = #tag::default();
-            // parse any attributes, keeping their types in mind
-            let attributes = e.attributes().map(|a| a.unwrap()).collect::<Vec<_>>();
-            //println!("{:?}", attributes);
-            for attribute in attributes {
-                let key = std::str::from_utf8(attribute.key).unwrap();
-                let value = attribute.unescape_and_decode_value(&reader).unwrap();
-                match key {
-                    #(#attr_str => {
-                        new_obj.#attr_idents =
-                            Some(value.parse::<#attr_types>().expect("Incorrect type"));
-                    })*
-                    _ => {
-                        //println!("{:?}", #attr_str);
-                        panic!("Attribute {} not parsed for {}", key, #tag_str);
-                    }
-                }
-            }
+            #instantiation_expr
+            #store_attr
             // match the current tag
             match container[current] {
                 // with the parent
                 #(MathNode::#parents (ref mut parent) => {
-                    new_tag = Some(MathNode::#tag(new_obj));
+                    #pass_object_expr
                     // update current pointer (which is really an int)
                     current = container_len;
                     // update parent pointer of new tag
@@ -126,11 +104,7 @@ pub fn push(input: TokenStream) -> TokenStream {
                     stack.push(current.clone());
                     //println!("Opened {}", #tag_str);
                 })*
-                _ => {
-                    //println!("Tried to open {} but failed", #tag_str);
-                    //println!("Currently in {:?}", container[current]);
-                    //#(println!("Parent not found: {:?}", #parent_str);)*
-                }
+                _ => {}
             }
         }
     };
@@ -138,23 +112,41 @@ pub fn push(input: TokenStream) -> TokenStream {
 }
 
 #[derive(Debug)]
-struct PushInput {
-    tag: Ident,
+struct OpenInput {
+    tag: Tag,
     parents: Vec<Ident>,
     attr_idents: Vec<Ident>,
     attr_types: Vec<Type>,
 }
 
-impl Parse for PushInput {
+#[derive(Debug)]
+enum Tag {
+    Ident(Ident),
+    Enum(Ident, Ident),
+}
+
+impl Parse for OpenInput {
     fn parse(input: ParseStream) -> Result<Self> {
-        //println!("{:#?}", input);
         // parse tag
-        let tag = syn::Ident::parse(input)?;
+        let tag_ident = syn::Ident::parse(input)?;
+        let tag: Tag;
+        // see if this is an enum
+        let mut lookahead = input.lookahead1();
+        if lookahead.peek(Token![:]) {
+            input.parse::<Token![:]>()?;
+            input.parse::<Token![:]>()?;
+
+            let enum_type = syn::Ident::parse(input)?;
+            tag = Tag::Enum(tag_ident, enum_type);
+        } else {
+            tag = Tag::Ident(tag_ident);
+        }
+
         // define fields used later
         let mut attr_idents = Vec::new();
         let mut attr_types = Vec::new();
         // define lookahead function
-        let mut lookahead = input.lookahead1();
+        lookahead = input.lookahead1();
 
         // if attributes are specified
         if lookahead.peek(kw::with) {
@@ -178,12 +170,12 @@ impl Parse for PushInput {
                 // break if found into
                 // lookahead works only once
                 lookahead = input.lookahead1();
-                if lookahead.peek(kw::into) {
+                if lookahead.peek(kw::to) {
                     break;
                 }
             }
         }
-        let _into = input.parse::<kw::into>()?;
+        let _to = input.parse::<kw::to>()?;
 
         // parse parent
         let mut parents = Vec::new();
@@ -206,65 +198,11 @@ impl Parse for PushInput {
 
         //println!("Parents: {:?}", parents);
 
-        Ok(PushInput {
+        Ok(OpenInput {
             tag,
             parents,
             attr_idents,
             attr_types,
-        })
-    }
-}
-
-#[proc_macro]
-pub fn add_op(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as OpInput);
-    //println!("{:?}", input);
-
-    let tag = &input.tag;
-    let tag_str = input.tag.to_string();
-    let parent = &input.parents[0];
-
-    let tokens = quote! {
-        // match the current tag
-        match container[current] {
-            // with the parent
-            // TODO: repeat for multiple possible parents
-            MathNode::#parent (ref mut parent) => {
-                // create Tag enum object
-                new_tag = Some(MathNode::new_op(Op::#tag));
-                // update current pointer (which is really an int)
-                current = container_len;
-                // update parent pointer of new tag
-                parent.children.push(current.clone());
-                // push current pointer to stack
-                stack.push(current.clone());
-                //println!("Opened {}", #tag_str);
-            }
-            _ => {}
-        }
-    };
-    tokens.into()
-}
-
-#[derive(Debug)]
-struct OpInput {
-    tag: Ident,
-    parents: Vec<Ident>,
-}
-
-impl Parse for OpInput {
-    fn parse(input: ParseStream) -> Result<Self> {
-        //println!("{:#?}", input);
-        // parse tag
-        let tag = syn::Ident::parse(input)?;
-        let _to = input.parse::<kw::to>()?;
-
-        // parse parent
-        let parent = syn::Ident::parse(input)?;
-
-        Ok(OpInput {
-            tag,
-            parents: vec![parent],
         })
     }
 }
@@ -286,8 +224,8 @@ pub fn close(input: TokenStream) -> TokenStream {
                 //println!("Closing {}", #tag_str);
             }
             _ => {
-                println!("{:#?}", container);
-                panic!("Trying to close {} but currently in {:?}", #tag_str, container[current]);
+                //println!("{:#?}", container);
+                //panic!("Trying to close {} but currently in {:?}", #tag_str, container[current]);
             }
         }
     };

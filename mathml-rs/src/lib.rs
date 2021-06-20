@@ -28,15 +28,15 @@ pub fn parse_fragment(
             Ok(Event::Start(ref e)) => {
                 let mut new_tag = None;
                 match e.name() {
-                    b"apply" => push![Apply into Root | Apply],
-                    b"times" => add_op![Times to Apply],
-                    b"power" => add_op![Power to Apply],
-                    b"ci" => push![Ci into Apply],
-                    b"cn" => push![Cn with
-                                        r#type as String,
-                                    into Apply],
+                    b"apply" => attach![Apply to Root | Apply],
+                    b"times" => attach![Op::Times to Apply],
+                    b"power" => attach![Op::Power to Apply],
+                    b"ci" => attach![Ci to Apply],
+                    //b"cn" => attach![Cn with
+                    //r#type as String,
+                    //into Apply],
                     _ => {
-                        panic!("Tag not parsed: {}", std::str::from_utf8(e.name()).unwrap());
+                        //panic!("Tag not parsed: {}", std::str::from_utf8(e.name()).unwrap());
                     }
                 }
                 match new_tag {
@@ -72,7 +72,7 @@ pub fn parse_fragment(
                         }
                     },
                     _ => {
-                        panic!("Text not parsed in {:?}: {}", container[current], s);
+                        //panic!("Text not parsed in {:?}: {}", container[current], s);
                     }
                 }
             }
