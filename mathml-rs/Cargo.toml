@@ -3,10 +3,14 @@ name = "mathml-rs"
 version = "0.1.0"
 authors = ["Pranav Ballaney <ballaneypranav@gmail.com>"]
 edition = "2018"
+description = "Macros for the MathML parser."
+homepage = "https://github.com/ballaneypranav/mathml-rs"
+repository = "https://github.com/ballaneypranav/mathml-rs"
+license = "MIT OR Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 quick-xml = "0.22.0"
-mathml-macros = { path = "../mathml-macros" }
+mathml-macros = { path = "../mathml-macros" , version = "0.1.0"}
 approx = "0.5.0"
