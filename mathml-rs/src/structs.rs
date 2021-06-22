@@ -1,4 +1,5 @@
 use approx;
+use std::fmt;
 
 pub type NodeIndex = usize;
 
@@ -6,10 +7,10 @@ pub type NodeIndex = usize;
 pub enum MathNode {
     Apply(Apply),
     Op(OpNode),
-    //Text(String),
     Root(Root),
     Ci(Ci),
     Cn(Cn),
+    //Lambda(Lambda),
 }
 
 impl MathNode {
@@ -21,16 +22,48 @@ impl MathNode {
     }
 }
 
+impl fmt::Display for MathNode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MathNode::Apply(apply) => write!(f, "Apply: {}", apply),
+            MathNode::Root(root) => write!(f, "Root: {}", root),
+            MathNode::Ci(ci) => write!(f, "Ci: {}", ci),
+            MathNode::Op(opnode) => write!(f, "Op: {}", opnode),
+            MathNode::Cn(cn) => write!(f, "Cn: {}", cn),
+        }
+    }
+}
+
 #[derive(Default, Debug, Clone, Eq, PartialEq)]
 pub struct Apply {
     pub children: Vec<NodeIndex>,
     pub parent: Option<NodeIndex>,
 }
 
+impl fmt::Display for Apply {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Children: {:?}, Parent: {:?}",
+            self.children, self.parent
+        )
+    }
+}
+
 #[derive(Default, Debug, Clone, Eq, PartialEq)]
 pub struct Root {
     pub children: Vec<NodeIndex>,
     pub parent: Option<NodeIndex>,
+}
+
+impl fmt::Display for Root {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "children: {:?}, parent: {:?}",
+            self.children, self.parent
+        )
+    }
 }
 
 #[derive(Default, Debug, Clone, Eq, PartialEq)]
@@ -48,6 +81,12 @@ impl Ci {
     }
 }
 
+impl fmt::Display for Ci {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "text: {:?}, parent: {:?}", self.text, self.parent)
+    }
+}
+
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct Cn {
     pub integer: Option<i32>,
@@ -57,10 +96,28 @@ pub struct Cn {
     pub parent: Option<NodeIndex>,
 }
 
+impl fmt::Display for Cn {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.r#type.as_deref() {
+            Some("integer") => write!(f, "integer: {}", self.integer.unwrap()),
+            Some("real") => write!(f, "integer: {}", self.real.unwrap()),
+            Some("double") => write!(f, "integer: {}", self.double.unwrap()),
+            Some(s) => write!(f, "invalid type: {}", s),
+            None => write!(f, "type is None"),
+        }
+    }
+}
+
 #[derive(Default, Debug, Clone, Eq, PartialEq)]
 pub struct OpNode {
     pub op: Option<Op>,
     pub parent: Option<NodeIndex>,
+}
+
+impl fmt::Display for OpNode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "op: {:?}, parent: {:?}", self.op, self.parent)
+    }
 }
 
 impl Default for MathNode {
