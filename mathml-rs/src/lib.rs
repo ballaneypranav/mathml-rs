@@ -32,11 +32,11 @@ pub fn parse_fragment(
                     b"times" => attach![Op::Times to Apply],
                     b"power" => attach![Op::Power to Apply],
                     b"ci" => attach![Ci to Apply],
-                    //b"cn" => attach![Cn with
-                    //r#type as String,
-                    //into Apply],
+                    b"cn" => attach![Cn with
+                                        r#type as String,
+                                    to Apply],
                     _ => {
-                        //panic!("Tag not parsed: {}", std::str::from_utf8(e.name()).unwrap());
+                        panic!("Tag not parsed: {}", std::str::from_utf8(e.name()).unwrap());
                     }
                 }
                 match new_tag {
@@ -72,7 +72,7 @@ pub fn parse_fragment(
                         }
                     },
                     _ => {
-                        //panic!("Text not parsed in {:?}: {}", container[current], s);
+                        panic!("Text not parsed in {:?}: {}", container[current], s);
                     }
                 }
             }
@@ -82,8 +82,11 @@ pub fn parse_fragment(
         }
     }
 
+    //println!("");
+    //let mut count = 0;
     //for item in &container {
-    //println!("{:?}", item);
+    //println!("{:0>2}: {}", count, item);
+    //count += 1;
     //}
     //println!("{:?}", txt);
     //println!("{:?}", stack);

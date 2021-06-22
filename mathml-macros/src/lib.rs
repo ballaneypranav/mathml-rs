@@ -22,7 +22,7 @@ pub fn attach(input: TokenStream) -> TokenStream {
     match input.tag {
         Tag::Ident(tag) => {
             instantiation_expr = quote! {
-                let new_node = #tag::default();
+                let mut new_node = #tag::default();
             };
             pass_object_expr = quote! {
                 new_tag = Some(MathNode::#tag(new_node));
@@ -68,7 +68,7 @@ pub fn attach(input: TokenStream) -> TokenStream {
             let value = attribute.unescape_and_decode_value(&reader).unwrap();
             match key {
                 #(#attr_str => {
-                    new_obj.#attr_idents =
+                    new_node.#attr_idents =
                         Some(value.parse::<#attr_types>().expect("Incorrect type"));
                 })*
                 _ => {
@@ -104,7 +104,9 @@ pub fn attach(input: TokenStream) -> TokenStream {
                     stack.push(current.clone());
                     //println!("Opened {}", #tag_str);
                 })*
-                _ => {}
+                _ => {
+                    panic!("Tag {:?} not parsed under parent {:?}", new_tag, container[current]);
+                }
             }
         }
     };
@@ -225,7 +227,7 @@ pub fn close(input: TokenStream) -> TokenStream {
             }
             _ => {
                 //println!("{:#?}", container);
-                //panic!("Trying to close {} but currently in {:?}", #tag_str, container[current]);
+                panic!("Trying to close {} but currently in {:?}", #tag_str, container[current]);
             }
         }
     };
