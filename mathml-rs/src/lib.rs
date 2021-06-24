@@ -1,10 +1,15 @@
+use mathml_macros::*;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use std::fs::File;
 use std::io::BufReader;
 pub mod structs;
-use mathml_macros::*;
-pub use structs::*;
+pub use structs::apply::*;
+pub use structs::ci::*;
+pub use structs::cn::*;
+pub use structs::math_node::*;
+pub use structs::op::*;
+pub use structs::root::*;
 
 pub fn parse_fragment(
     mut reader: Reader<BufReader<File>>,
@@ -30,6 +35,8 @@ pub fn parse_fragment(
                 match e.name() {
                     b"apply" => attach![Apply to Root | Apply],
                     b"times" => attach![Op::Times to Apply],
+                    b"divide" => attach![Op::Divide to Apply],
+                    b"minus" => attach![Op::Minus to Apply],
                     b"power" => attach![Op::Power to Apply],
                     b"ci" => attach![Ci to Apply],
                     b"cn" => attach![Cn with
