@@ -7,6 +7,7 @@ pub mod structs;
 pub use structs::apply::*;
 pub use structs::ci::*;
 pub use structs::cn::*;
+pub use structs::lambda::*;
 pub use structs::math_node::*;
 pub use structs::numbers::*;
 pub use structs::op::*;
@@ -47,6 +48,7 @@ pub fn parse_fragment(
                     b"cn" => attach![Cn with
                                         r#type as NumType,
                                     to Apply],
+                    b"lambda" => attach![Lambda to Root],
                     _ => {
                         panic!("Tag not parsed: {}", std::str::from_utf8(e.name()).unwrap());
                     }

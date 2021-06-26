@@ -2,6 +2,7 @@ pub type NodeIndex = usize;
 use super::apply::Apply;
 use super::ci::Ci;
 use super::cn::Cn;
+use super::lambda::Lambda;
 use super::op::{Op, OpNode};
 use super::root::Root;
 use std::fmt;
@@ -13,7 +14,7 @@ pub enum MathNode {
     Root(Root),
     Ci(Ci),
     Cn(Cn),
-    //Lambda(Lambda),
+    Lambda(Lambda),
 }
 
 impl MathNode {
@@ -39,6 +40,7 @@ impl fmt::Display for MathNode {
             MathNode::Ci(ci) => write!(f, "Ci: {}", ci),
             MathNode::Op(opnode) => write!(f, "Op: {}", opnode),
             MathNode::Cn(cn) => write!(f, "Cn: {}", cn),
+            MathNode::Lambda(lambda) => write!(f, "Lambda: {}", lambda),
         }
     }
 }
