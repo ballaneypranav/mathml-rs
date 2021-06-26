@@ -8,6 +8,7 @@ pub use structs::apply::*;
 pub use structs::ci::*;
 pub use structs::cn::*;
 pub use structs::math_node::*;
+pub use structs::numbers::*;
 pub use structs::op::*;
 pub use structs::root::*;
 
@@ -40,7 +41,7 @@ pub fn parse_fragment(
                     b"power" => attach![Op::Power to Apply],
                     b"ci" => attach![Ci to Apply],
                     b"cn" => attach![Cn with
-                                        r#type as String,
+                                        r#type as NumType,
                                     to Apply],
                     _ => {
                         panic!("Tag not parsed: {}", std::str::from_utf8(e.name()).unwrap());
@@ -70,9 +71,14 @@ pub fn parse_fragment(
                     MathNode::Ci(..) => {
                         container[current] = MathNode::Ci(Ci::with_text(s));
                     }
-                    MathNode::Cn(ref mut cn) => match cn.r#type.as_deref() {
-                        Some("integer") => {
-                            cn.integer = Some(s.parse::<i32>().expect("Incorrect type"))
+                    MathNode::Cn(ref mut cn) => match cn.r#type {
+                        Some(NumType::Real) => {
+                            let value = s.parse::<f64>().expect("Incorrect type");
+                            cn.value = Some(Number::Real(value));
+                        }
+                        Some(NumType::Integer) => {
+                            let value = s.parse::<i32>().expect("Incorrect type");
+                            cn.value = Some(Number::Integer(value));
                         }
                         _ => {
                             panic!("Math type did not match for cn: {:?}", cn);
