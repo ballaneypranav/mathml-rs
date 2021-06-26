@@ -12,6 +12,9 @@ pub use structs::numbers::*;
 pub use structs::op::*;
 pub use structs::root::*;
 
+pub mod methods;
+pub use methods::evaluate::*;
+
 pub fn parse_fragment(
     mut reader: Reader<BufReader<File>>,
 ) -> (Vec<MathNode>, Reader<BufReader<File>>) {
@@ -38,6 +41,7 @@ pub fn parse_fragment(
                     b"times" => attach![Op::Times to Apply],
                     b"divide" => attach![Op::Divide to Apply],
                     b"minus" => attach![Op::Minus to Apply],
+                    b"plus" => attach![Op::Plus to Apply],
                     b"power" => attach![Op::Power to Apply],
                     b"ci" => attach![Ci to Apply],
                     b"cn" => attach![Cn with
@@ -58,6 +62,9 @@ pub fn parse_fragment(
             Ok(Event::End(ref e)) => match e.name() {
                 b"apply" => close![Apply],
                 b"times" => close![Op],
+                b"divide" => close![Op],
+                b"minus" => close![Op],
+                b"plus" => close![Op],
                 b"power" => close![Op],
                 b"ci" => close![Ci],
                 b"cn" => close![Cn],
@@ -69,7 +76,7 @@ pub fn parse_fragment(
                 let s = e.unescape_and_decode(&reader).unwrap();
                 match container[current] {
                     MathNode::Ci(..) => {
-                        container[current] = MathNode::Ci(Ci::with_text(s));
+                        container[current] = MathNode::Ci(Ci::with_name(s));
                     }
                     MathNode::Cn(ref mut cn) => match cn.r#type {
                         Some(NumType::Real) => {
