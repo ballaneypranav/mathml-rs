@@ -51,13 +51,21 @@ pub fn evaluate_node(
                 }
                 Op::Divide => {
                     if apply.operands.len() != 2 {
-                        return Err("Illegal number of operands.");
+                        return Err("Invalid number of operands.");
                     }
                     let a = evaluate_node(nodes, apply.operands[0], values)?;
                     let b = evaluate_node(nodes, apply.operands[1], values)?;
                     Ok(a / b)
                 }
-                _ => Err("couldn't parse"),
+                Op::Power => {
+                    if apply.operands.len() != 2 {
+                        return Err("Invalid number of operands.");
+                    }
+                    let a = evaluate_node(nodes, apply.operands[0], values)?;
+                    let b = evaluate_node(nodes, apply.operands[1], values)?;
+                    Ok(a.powf(b))
+                }
+                _ => Err("Evaluation not supported for operator."),
             }
         }
         MathNode::Cn(cn) => match &cn.r#type {
@@ -75,7 +83,7 @@ pub fn evaluate_node(
             if values.contains_key(&name) {
                 Ok(*values.get(&name).unwrap())
             } else {
-                Err("No value found for variable!")
+                Err("No value found!")
             }
         }
         _ => Err("couldn't parse"),

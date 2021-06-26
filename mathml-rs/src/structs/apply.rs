@@ -1,5 +1,5 @@
 use super::math_node::{MathNode, MathNodeType, NodeIndex};
-use super::op::{Op, OpNode};
+use super::op::Op;
 use std::fmt;
 
 #[derive(Default, Debug, Clone, Eq, PartialEq)]
