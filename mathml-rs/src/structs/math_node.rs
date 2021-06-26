@@ -6,7 +6,7 @@ use super::op::{Op, OpNode};
 use super::root::Root;
 use std::fmt;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum MathNode {
     Apply(Apply),
     Op(OpNode),
@@ -41,4 +41,12 @@ impl fmt::Display for MathNode {
             MathNode::Cn(cn) => write!(f, "Cn: {}", cn),
         }
     }
+}
+
+pub enum MathNodeType {
+    Apply,
+    Op,
+    Root,
+    Ci,
+    Cn,
 }

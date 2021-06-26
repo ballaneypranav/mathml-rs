@@ -18,6 +18,7 @@ pub fn attach(input: TokenStream) -> TokenStream {
     let instantiation_expr;
     let pass_object_expr;
     let tag_str;
+    let tag_type;
     match input.tag {
         Tag::Ident(tag) => {
             instantiation_expr = quote! {
@@ -28,6 +29,7 @@ pub fn attach(input: TokenStream) -> TokenStream {
             };
 
             tag_str = tag.to_string();
+            tag_type = tag;
         }
         Tag::Enum(enum_name, enum_type) => {
             let enum_str = enum_name.to_string().to_lowercase();
@@ -41,6 +43,7 @@ pub fn attach(input: TokenStream) -> TokenStream {
             };
 
             tag_str = format!("{}::{}", enum_name.to_string(), enum_type.to_string());
+            tag_type = enum_name;
         }
     }
 
@@ -78,11 +81,22 @@ pub fn attach(input: TokenStream) -> TokenStream {
         }
     };
 
+    let index_expr = quote! {
+        parent.index(MathNodeType::#tag_type, current.clone());
+    };
+
     let parents = &input.parents;
     // create strings for debugging
-    let mut parent_str: Vec<String> = Vec::new();
+    let mut parent_strs: Vec<String> = Vec::new();
+    let mut index_exprs: Vec<proc_macro2::TokenStream> = Vec::new();
     for parent in parents {
-        parent_str.push(parent.to_string());
+        let parent_str = parent.to_string();
+        if parent_str == "Apply" {
+            index_exprs.push(index_expr.clone());
+        } else {
+            index_exprs.push(quote! {})
+        }
+        parent_strs.push(parent_str);
     }
 
     let tokens = quote! {
@@ -99,6 +113,7 @@ pub fn attach(input: TokenStream) -> TokenStream {
                     current = container_len;
                     // update parent pointer of new tag
                     parent.children.push(current.clone());
+                    #index_exprs
                     // push current pointer to stack
                     stack.push(current.clone());
                     //println!("Opened {}", #tag_str);
