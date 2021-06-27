@@ -89,9 +89,10 @@ pub fn attach(input: TokenStream) -> TokenStream {
     // create strings for debugging
     let mut parent_strs: Vec<String> = Vec::new();
     let mut index_exprs: Vec<proc_macro2::TokenStream> = Vec::new();
+    let parents_to_index: Vec<String> = vec!["Apply", "Lambda"].iter().map(|&a| a.into()).collect();
     for parent in parents {
         let parent_str = parent.to_string();
-        if parent_str == "Apply" {
+        if parents_to_index.contains(&parent_str) {
             index_exprs.push(index_expr.clone());
         } else {
             index_exprs.push(quote! {})
@@ -119,7 +120,7 @@ pub fn attach(input: TokenStream) -> TokenStream {
                     //println!("Opened {}", #tag_str);
                 })*
                 _ => {
-                    panic!("Tag {:?} not parsed under parent {:?}", new_tag, container[current]);
+                    panic!("Tag {:?} not parsed under parent {:?}", #tag_str, container[current]);
                 }
             }
         }

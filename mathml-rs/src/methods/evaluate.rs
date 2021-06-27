@@ -2,7 +2,6 @@ use super::super::structs::math_node::{MathNode, NodeIndex};
 use super::super::structs::numbers::{NumType, Number};
 use super::super::structs::op::Op;
 use std::collections::HashMap;
-use std::fmt;
 
 pub fn evaluate_node(
     nodes: &Vec<MathNode>,

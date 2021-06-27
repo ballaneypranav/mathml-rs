@@ -20,10 +20,10 @@ impl Apply {
                     panic!("Can't have two operators in an apply node!");
                 }
             }
-            MathNodeType::Apply | MathNodeType::Ci | MathNodeType::Cn => {
+            MathNodeType::Apply | MathNodeType::Ci | MathNodeType::Cn | MathNodeType::Lambda => {
                 self.operands.push(location);
             }
-            MathNodeType::Root => {}
+            MathNodeType::Root | MathNodeType::BVar => {}
         }
     }
 

@@ -1,5 +1,6 @@
 pub type NodeIndex = usize;
 use super::apply::Apply;
+use super::bindings::BVar;
 use super::ci::Ci;
 use super::cn::Cn;
 use super::lambda::Lambda;
@@ -15,6 +16,7 @@ pub enum MathNode {
     Ci(Ci),
     Cn(Cn),
     Lambda(Lambda),
+    BVar(BVar),
 }
 
 impl MathNode {
@@ -41,6 +43,7 @@ impl fmt::Display for MathNode {
             MathNode::Op(opnode) => write!(f, "Op: {}", opnode),
             MathNode::Cn(cn) => write!(f, "Cn: {}", cn),
             MathNode::Lambda(lambda) => write!(f, "Lambda: {}", lambda),
+            MathNode::BVar(bvar) => write!(f, "BVar: {}", bvar),
         }
     }
 }
@@ -51,4 +54,6 @@ pub enum MathNodeType {
     Root,
     Ci,
     Cn,
+    Lambda,
+    BVar,
 }

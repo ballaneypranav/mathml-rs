@@ -5,6 +5,7 @@ use std::fs::File;
 use std::io::BufReader;
 pub mod structs;
 pub use structs::apply::*;
+pub use structs::bindings::*;
 pub use structs::ci::*;
 pub use structs::cn::*;
 pub use structs::lambda::*;
@@ -38,17 +39,18 @@ pub fn parse_fragment(
             Ok(Event::Start(ref e)) => {
                 let mut new_tag = None;
                 match e.name() {
-                    b"apply" => attach![Apply to Root | Apply],
+                    b"apply" => attach![Apply to Root | Apply | Lambda],
                     b"times" => attach![Op::Times to Apply],
                     b"divide" => attach![Op::Divide to Apply],
                     b"minus" => attach![Op::Minus to Apply],
                     b"plus" => attach![Op::Plus to Apply],
                     b"power" => attach![Op::Power to Apply],
-                    b"ci" => attach![Ci to Apply],
+                    b"ci" => attach![Ci to Apply | BVar ],
                     b"cn" => attach![Cn with
                                         r#type as NumType,
                                     to Apply],
                     b"lambda" => attach![Lambda to Root],
+                    b"bvar" => attach![BVar to Lambda],
                     _ => {
                         panic!("Tag not parsed: {}", std::str::from_utf8(e.name()).unwrap());
                     }
@@ -70,6 +72,8 @@ pub fn parse_fragment(
                 b"power" => close![Op],
                 b"ci" => close![Ci],
                 b"cn" => close![Cn],
+                b"lambda" => close![Lambda],
+                b"bvar" => close![BVar],
                 b"math" => break,
                 _ => {}
             },
