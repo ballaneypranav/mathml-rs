@@ -89,7 +89,11 @@ pub fn attach(input: TokenStream) -> TokenStream {
     // create strings for debugging
     let mut parent_strs: Vec<String> = Vec::new();
     let mut index_exprs: Vec<proc_macro2::TokenStream> = Vec::new();
-    let parents_to_index: Vec<String> = vec!["Apply", "Lambda"].iter().map(|&a| a.into()).collect();
+    // TODO: Convert this to trait
+    let parents_to_index: Vec<String> = vec!["Apply", "Lambda", "Piecewise", "Piece", "Otherwise"]
+        .iter()
+        .map(|&a| a.into())
+        .collect();
     for parent in parents {
         let parent_str = parent.to_string();
         if parents_to_index.contains(&parent_str) {
