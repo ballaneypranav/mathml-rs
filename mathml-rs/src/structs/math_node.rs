@@ -15,6 +15,9 @@ pub enum MathNode {
     Cn(Cn),
     Lambda(Lambda),
     BVar(BVar),
+    Piecewise(Piecewise),
+    Piece(Piece),
+    Otherwise(Otherwise),
 }
 
 impl MathNode {
@@ -42,6 +45,9 @@ impl fmt::Display for MathNode {
             MathNode::Cn(cn) => write!(f, "Cn: {}", cn),
             MathNode::Lambda(lambda) => write!(f, "Lambda: {}", lambda),
             MathNode::BVar(bvar) => write!(f, "BVar: {}", bvar),
+            MathNode::Piecewise(piecewise) => write!(f, "Piecewise: {}", piecewise),
+            MathNode::Piece(piece) => write!(f, "Piece: {}", piece),
+            MathNode::Otherwise(otherwise) => write!(f, "Otherwise: {}", otherwise),
         }
     }
 }
@@ -54,4 +60,22 @@ pub enum MathNodeType {
     Cn,
     Lambda,
     BVar,
+    Piecewise,
+    Piece,
+    Otherwise,
+impl fmt::Display for MathNodeType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MathNodeType::Apply => write!(f, "Apply"),
+            MathNodeType::Root => write!(f, "Root"),
+            MathNodeType::Ci => write!(f, "Ci"),
+            MathNodeType::Op => write!(f, "Op"),
+            MathNodeType::Cn => write!(f, "Cn"),
+            MathNodeType::Lambda => write!(f, "Lambda"),
+            MathNodeType::BVar => write!(f, "BVar"),
+            MathNodeType::Piecewise => write!(f, "Piecewise"),
+            MathNodeType::Piece => write!(f, "Piece"),
+            MathNodeType::Otherwise => write!(f, "Otherwise"),
+        }
+    }
 }

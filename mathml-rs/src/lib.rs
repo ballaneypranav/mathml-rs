@@ -12,6 +12,7 @@ pub use structs::lambda::*;
 pub use structs::math_node::*;
 pub use structs::numbers::*;
 pub use structs::op::*;
+pub use structs::piecewise::*;
 pub use structs::root::*;
 
 pub mod methods;
@@ -39,7 +40,7 @@ pub fn parse_fragment(
             Ok(Event::Start(ref e)) => {
                 let mut new_tag = None;
                 match e.name() {
-                    b"apply" => attach![Apply to Root | Apply | Lambda],
+                    b"apply" => attach![Apply to Root | Apply | Lambda | Piece | Otherwise],
                     b"times" => attach![Op::Times to Apply],
                     b"divide" => attach![Op::Divide to Apply],
                     b"minus" => attach![Op::Minus to Apply],
@@ -51,6 +52,9 @@ pub fn parse_fragment(
                                     to Apply],
                     b"lambda" => attach![Lambda to Root],
                     b"bvar" => attach![BVar to Lambda],
+                    b"piecewise" => attach![Piecewise to Root | Apply | Lambda],
+                    b"piece" => attach![Piece to Piecewise],
+                    b"otherwise" => attach![Otherwise to Piecewise],
                     _ => {
                         panic!("Tag not parsed: {}", std::str::from_utf8(e.name()).unwrap());
                     }
@@ -70,6 +74,9 @@ pub fn parse_fragment(
                 b"minus" => close![Op],
                 b"plus" => close![Op],
                 b"power" => close![Op],
+                b"piecewise" => close![Piecewise],
+                b"piece" => close![Piece],
+                b"otherwise" => close![Otherwise],
                 b"ci" => close![Ci],
                 b"cn" => close![Cn],
                 b"lambda" => close![Lambda],

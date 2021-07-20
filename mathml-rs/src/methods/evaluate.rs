@@ -123,7 +123,18 @@ pub fn evaluate_node(
         MathNode::Ci(ci) => {
             let name = ci.name.expect("Ci element with no content!");
             if values.contains_key(&name) {
-                Ok(*values.get(&name).unwrap())
+                let result = *values.get(&name).unwrap();
+                //println!("Returning {} from ci", result);
+                Ok(result)
+            } else {
+                Err("No value found!".to_string())
+            }
+        }
+        MathNode::Piecewise(..) => Ok(evaluate_piecewise(nodes, head_idx, values, functions)?),
+        _ => {
+            let error = format!("Couldn't evaluate operator {}", head);
+            Err(error)
+        }
     }
 }
 
@@ -169,3 +180,75 @@ pub fn evaluate_lambda(
     }
 }
 
+pub fn evaluate_piecewise(
+    nodes: &Vec<MathNode>,
+    head_idx: NodeIndex,
+    values: &HashMap<String, f64>,
+    functions: &HashMap<String, Vec<MathNode>>,
+) -> Result<f64, String> {
+    let head = nodes[head_idx].clone();
+    match head {
+        MathNode::Piecewise(piecewise) => {
+            let pieces_idx = piecewise.pieces;
+            let otherwise_idx = piecewise.otherwise;
+            let mut result = None;
+            for piece_idx in pieces_idx {
+                let (condition, value) = evaluate_piece(nodes, piece_idx, values, functions)?;
+                if condition {
+                    if let Some(piece_result) = value {
+                        result = value;
+                        break;
+                    }
+                }
+            }
+            if let Some(value) = result {
+                Ok(value)
+            } else {
+                if let Some(otherwise_idx_value) = otherwise_idx {
+                    Ok(evaluate_piecewise(
+                        nodes,
+                        otherwise_idx_value,
+                        values,
+                        functions,
+                    )?)
+                } else {
+                    Err("All pieces evaluated to false and no otherwise branch found.".to_string())
+                }
+            }
+        }
+        MathNode::Otherwise(otherwise) => {
+            let expr_idx = otherwise.expr.expect("Otherwise branch is empty!");
+            Ok(evaluate_node(nodes, expr_idx, values, functions)?)
+        }
+        _ => {
+            //dbg!(head);
+            Err("haha couldn't parse".to_string())
+        }
+    }
+}
+
+pub fn evaluate_piece(
+    nodes: &Vec<MathNode>,
+    head_idx: NodeIndex,
+    values: &HashMap<String, f64>,
+    functions: &HashMap<String, Vec<MathNode>>,
+) -> Result<(bool, Option<f64>), String> {
+    let head = nodes[head_idx].clone();
+    match head {
+        MathNode::Piece(piece) => {
+            let expr_idx = piece.expr.expect("Piece has no expression!");
+            let condition_idx = piece.condition.expect("Piece condition is empty!");
+            let condition_result = evaluate_condition(nodes, condition_idx, values, functions)?;
+            if condition_result {
+                let expr_result = evaluate_node(nodes, expr_idx, values, functions)?;
+                Ok((true, Some(expr_result)))
+            } else {
+                Ok((false, None))
+            }
+        }
+        _ => {
+            //dbg!(head);
+            Err("haha couldn't parse".to_string())
+        }
+    }
+}
