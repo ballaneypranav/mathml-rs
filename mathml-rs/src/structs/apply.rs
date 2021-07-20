@@ -1,3 +1,4 @@
+use super::lambda::Lambda;
 use super::math_node::{MathNode, MathNodeType, NodeIndex};
 use super::op::Op;
 use std::fmt;
@@ -11,19 +12,11 @@ pub struct Apply {
 }
 
 impl Apply {
-    pub fn index(&mut self, tag_type: MathNodeType, location: NodeIndex) {
-        match tag_type {
-            MathNodeType::Op => {
-                if self.operator == None {
-                    self.operator = Some(location);
-                } else {
-                    panic!("Can't have two operators in an apply node!");
-                }
-            }
-            MathNodeType::Apply | MathNodeType::Ci | MathNodeType::Cn | MathNodeType::Lambda => {
-                self.operands.push(location);
-            }
-            MathNodeType::Root | MathNodeType::BVar => {}
+    pub fn index(&mut self, _tag_type: MathNodeType, location: NodeIndex) {
+        if self.children.len() == 1 {
+            self.operator = Some(location);
+        } else {
+            self.operands.push(location);
         }
     }
 
@@ -32,7 +25,15 @@ impl Apply {
         if let MathNode::Op(opnode) = &nodes[operator_idx] {
             return Ok(opnode.op.clone().unwrap());
         }
-        Err("No operator found!")
+        Err("Not a regular mathematical operator.")
+    }
+
+    pub fn get_lambda(&self, nodes: &Vec<MathNode>) -> Result<Lambda, &'static str> {
+        let operator_idx = self.operator.expect("No operator found!");
+        if let MathNode::Lambda(lambda) = &nodes[operator_idx] {
+            return Ok(lambda.clone());
+        }
+        Err("Not a lambda function.")
     }
 }
 

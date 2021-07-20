@@ -12,17 +12,28 @@ pub struct Lambda {
 impl Lambda {
     pub fn index(&mut self, tag_type: MathNodeType, location: NodeIndex) {
         match tag_type {
-            MathNodeType::Op | MathNodeType::Apply | MathNodeType::Lambda => {
+            MathNodeType::Op
+            | MathNodeType::Apply
+            | MathNodeType::Lambda
+            | MathNodeType::Piecewise
+            | MathNodeType::Constant => {
                 if self.expr == None {
                     self.expr = Some(location);
                 } else {
-                    panic!("Can't have two operators in an apply node!");
+                    panic!("Can't have two expressions in a lambda function!");
                 }
             }
             MathNodeType::BVar => {
                 self.bindings.push(location);
             }
-            MathNodeType::Root | MathNodeType::Ci | MathNodeType::Cn => {}
+            MathNodeType::Root
+            | MathNodeType::Ci
+            | MathNodeType::Cn
+            | MathNodeType::Piece
+            | MathNodeType::Otherwise => {
+                let error = format!("Can't have {} in a lambda function!", tag_type);
+                panic!(error);
+            }
         }
     }
 }

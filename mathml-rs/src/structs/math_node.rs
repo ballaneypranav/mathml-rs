@@ -1,11 +1,9 @@
 pub type NodeIndex = usize;
-use super::apply::Apply;
-use super::bindings::BVar;
-use super::ci::Ci;
-use super::cn::Cn;
-use super::lambda::Lambda;
-use super::op::{Op, OpNode};
-use super::root::Root;
+use crate::{
+    Apply, BVar, Ci, Cn, Constant, ConstantNode, Lambda, Op, OpNode, Otherwise, Piece, Piecewise,
+    Root,
+};
+
 use std::fmt;
 
 #[derive(Debug, Clone)]
