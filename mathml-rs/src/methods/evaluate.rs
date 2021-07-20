@@ -104,12 +104,21 @@ pub fn evaluate_node(
         MathNode::Cn(cn) => match &cn.r#type {
             Some(NumType::Integer) => {
                 if let Some(Number::Integer(i)) = cn.value {
-                    Ok(i.into())
+                    let result = i.into();
+                    //println!("Returning {} from cn", result);
+                    Ok(result)
                 } else {
-                    Err("Wrong type")
+                    Err("Wrong type".to_string())
                 }
             }
-            _ => Err("couldn't parse"),
+            Some(NumType::Real) | None => {
+                if let Some(Number::Real(r)) = cn.value {
+                    Ok(r)
+                } else {
+                    Err("Wrong type".to_string())
+                }
+            }
+            _ => Err("Invalid Cn type".to_string()),
         },
         MathNode::Ci(ci) => {
             let name = ci.name.expect("Ci element with no content!");

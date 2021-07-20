@@ -85,7 +85,7 @@ pub fn parse_fragment(
                         container[current] = MathNode::Ci(Ci::with_name(s));
                     }
                     MathNode::Cn(ref mut cn) => match cn.r#type {
-                        Some(NumType::Real) => {
+                        Some(NumType::Real) | None => {
                             let value = s.parse::<f64>().expect("Incorrect type");
                             cn.value = Some(Number::Real(value));
                         }
