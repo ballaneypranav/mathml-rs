@@ -10,6 +10,7 @@ use std::fmt;
 pub enum MathNode {
     Apply(Apply),
     Op(OpNode),
+    Constant(ConstantNode),
     Root(Root),
     Ci(Ci),
     Cn(Cn),
@@ -24,6 +25,12 @@ impl MathNode {
     pub fn new_op(op: Op) -> Self {
         MathNode::Op(OpNode {
             op: Some(op),
+            parent: None,
+        })
+    }
+    pub fn new_constant(constant: Constant) -> Self {
+        MathNode::Constant(ConstantNode {
+            constant: Some(constant),
             parent: None,
         })
     }
@@ -48,6 +55,7 @@ impl fmt::Display for MathNode {
             MathNode::Piecewise(piecewise) => write!(f, "Piecewise: {}", piecewise),
             MathNode::Piece(piece) => write!(f, "Piece: {}", piece),
             MathNode::Otherwise(otherwise) => write!(f, "Otherwise: {}", otherwise),
+            MathNode::Constant(constantnode) => write!(f, "Constant: {}", constantnode),
         }
     }
 }
@@ -63,6 +71,9 @@ pub enum MathNodeType {
     Piecewise,
     Piece,
     Otherwise,
+    Constant,
+}
+
 impl fmt::Display for MathNodeType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -70,6 +81,7 @@ impl fmt::Display for MathNodeType {
             MathNodeType::Root => write!(f, "Root"),
             MathNodeType::Ci => write!(f, "Ci"),
             MathNodeType::Op => write!(f, "Op"),
+            MathNodeType::Constant => write!(f, "Constant"),
             MathNodeType::Cn => write!(f, "Cn"),
             MathNodeType::Lambda => write!(f, "Lambda"),
             MathNodeType::BVar => write!(f, "BVar"),

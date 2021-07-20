@@ -1,6 +1,9 @@
+use super::super::structs::constants::Constant;
 use super::super::structs::math_node::{MathNode, NodeIndex};
 use super::super::structs::numbers::{NumType, Number};
 use super::super::structs::op::Op;
+use math::round;
+use mathru::statistics::combins::factorial;
 use std::collections::HashMap;
 
 pub fn evaluate_node(
@@ -249,6 +252,69 @@ pub fn evaluate_piece(
         _ => {
             //dbg!(head);
             Err("haha couldn't parse".to_string())
+        }
+    }
+}
+
+pub fn evaluate_condition(
+    nodes: &Vec<MathNode>,
+    head_idx: NodeIndex,
+    values: &HashMap<String, f64>,
+    functions: &HashMap<String, Vec<MathNode>>,
+) -> Result<bool, String> {
+    let head = nodes[head_idx].clone();
+    match head {
+        MathNode::Constant(constantnode) => {
+            if let Some(constant) = constantnode.constant {
+                match constant {
+                    Constant::False => Ok(false),
+                    Constant::True => Ok(true),
+                    _ => Err("haha".to_string()),
+                }
+            } else {
+                Err("hh".to_string())
+            }
+        }
+        MathNode::Apply(apply) => {
+            let op_result = apply.get_op(nodes);
+            let mut result = None;
+            // If this is a regular mathematical operator, go ahead
+            if let Ok(op) = op_result {
+                let mut a = None;
+                let mut b = None;
+                match op {
+                    Op::Eq | Op::Neq | Op::Geq | Op::Leq | Op::Gt | Op::Lt => {
+                        if apply.operands.len() != 2 {
+                            return Err("Invalid number of operands.".to_string());
+                        }
+                        a = Some(evaluate_node(nodes, apply.operands[0], values, functions)?);
+                        b = Some(evaluate_node(nodes, apply.operands[1], values, functions)?);
+                    }
+                    _ => {}
+                }
+                if let Some(first_value) = a {
+                    if let Some(second_value) = b {
+                        match op {
+                            Op::Eq => result = Some(first_value == second_value),
+                            Op::Neq => result = Some(first_value != second_value),
+                            Op::Gt => result = Some(first_value > second_value),
+                            Op::Lt => result = Some(first_value < second_value),
+                            Op::Geq => result = Some(first_value >= second_value),
+                            Op::Leq => result = Some(first_value <= second_value),
+                            _ => {}
+                        }
+                    }
+                }
+            }
+            if let Some(value) = result {
+                Ok(value)
+            } else {
+                Err("Invalid operator".to_string())
+            }
+        }
+        _ => {
+            let error = format!("Couldn't evaluate operator {}", head);
+            Err(error)
         }
     }
 }

@@ -8,6 +8,7 @@ pub use structs::apply::*;
 pub use structs::bindings::*;
 pub use structs::ci::*;
 pub use structs::cn::*;
+pub use structs::constants::*;
 pub use structs::lambda::*;
 pub use structs::math_node::*;
 pub use structs::numbers::*;
@@ -46,10 +47,20 @@ pub fn parse_fragment(
                     b"minus" => attach![Op::Minus to Apply],
                     b"plus" => attach![Op::Plus to Apply],
                     b"power" => attach![Op::Power to Apply],
-                    b"ci" => attach![Ci to Apply | BVar ],
+                    b"factorial" => attach![Op::Factorial to Apply],
+                    b"eq" => attach![Op::Eq to Apply],
+                    b"neq" => attach![Op::Neq to Apply],
+                    b"gt" => attach![Op::Gt to Apply],
+                    b"lt" => attach![Op::Lt to Apply],
+                    b"geq" => attach![Op::Geq to Apply],
+                    b"leq" => attach![Op::Leq to Apply],
+                    b"ceiling" => attach![Op::Ceiling to Apply],
+                    b"true" => attach![Constant::True to Apply | Piece ],
+                    b"false" => attach![Constant::False to Apply | Piece ],
+                    b"ci" => attach![Ci to Apply | BVar | Piece | Otherwise | Lambda ],
                     b"cn" => attach![Cn with
                                         r#type as NumType,
-                                    to Apply],
+                                    to Apply | BVar | Piece | Otherwise | Lambda ],
                     b"lambda" => attach![Lambda to Root],
                     b"bvar" => attach![BVar to Lambda],
                     b"piecewise" => attach![Piecewise to Root | Apply | Lambda],
@@ -74,9 +85,19 @@ pub fn parse_fragment(
                 b"minus" => close![Op],
                 b"plus" => close![Op],
                 b"power" => close![Op],
+                b"factorial" => close![Op],
+                b"eq" => close![Op],
+                b"neq" => close![Op],
+                b"geq" => close![Op],
+                b"leq" => close![Op],
+                b"gt" => close![Op],
+                b"lt" => close![Op],
+                b"ceiling" => close![Op],
                 b"piecewise" => close![Piecewise],
                 b"piece" => close![Piece],
                 b"otherwise" => close![Otherwise],
+                b"true" => close![Constant],
+                b"false" => close![Constant],
                 b"ci" => close![Ci],
                 b"cn" => close![Cn],
                 b"lambda" => close![Lambda],
