@@ -20,7 +20,7 @@ impl Apply {
         }
     }
 
-    pub fn get_op(&self, nodes: &Vec<MathNode>) -> Result<Op, &'static str> {
+    pub fn get_op(&self, nodes: &[MathNode]) -> Result<Op, &'static str> {
         let operator_idx = self.operator.expect("No operator found!");
         if let MathNode::Op(opnode) = &nodes[operator_idx] {
             return Ok(opnode.op.clone().unwrap());
@@ -28,7 +28,7 @@ impl Apply {
         Err("Not a regular mathematical operator.")
     }
 
-    pub fn get_lambda(&self, nodes: &Vec<MathNode>) -> Result<Lambda, &'static str> {
+    pub fn get_lambda(&self, nodes: &[MathNode]) -> Result<Lambda, &'static str> {
         let operator_idx = self.operator.expect("No operator found!");
         if let MathNode::Lambda(lambda) = &nodes[operator_idx] {
             return Ok(lambda.clone());

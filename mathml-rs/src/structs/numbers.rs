@@ -1,5 +1,3 @@
-//use super::math_node::NodeIndex;
-use approx;
 use std::str::FromStr;
 
 #[derive(Debug, Clone)]

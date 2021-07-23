@@ -199,8 +199,7 @@ impl Parse for OpenInput {
         let _to = input.parse::<kw::to>()?;
 
         // parse parent
-        let mut parents = Vec::new();
-        parents.push(syn::Ident::parse(input)?);
+        let mut parents = vec![syn::Ident::parse(input)?];
 
         // see if there are multiple parents
         loop {

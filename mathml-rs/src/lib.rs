@@ -39,7 +39,7 @@ pub fn parse_fragment(
         match reader.read_event(&mut buf) {
             // for each starting tag
             Ok(Event::Start(ref e)) => {
-                let mut new_tag = None;
+                let new_tag;
                 match e.name() {
                     b"apply" => attach![Apply to Root | Apply | Lambda | Piece | Otherwise],
                     b"times" => attach![Op::Times to Apply],
@@ -55,12 +55,13 @@ pub fn parse_fragment(
                     b"geq" => attach![Op::Geq to Apply],
                     b"leq" => attach![Op::Leq to Apply],
                     b"ceiling" => attach![Op::Ceiling to Apply],
+                    b"floor" => attach![Op::Floor to Apply],
                     b"true" => attach![Constant::True to Apply | Piece ],
                     b"false" => attach![Constant::False to Apply | Piece ],
                     b"ci" => attach![Ci to Apply | BVar | Piece | Otherwise | Lambda ],
                     b"cn" => attach![Cn with
                                         r#type as NumType,
-                                    to Apply | BVar | Piece | Otherwise | Lambda ],
+                                    to Root | Apply | BVar | Piece | Otherwise | Lambda ],
                     b"lambda" => attach![Lambda to Root],
                     b"bvar" => attach![BVar to Lambda],
                     b"piecewise" => attach![Piecewise to Root | Apply | Lambda],
@@ -70,12 +71,9 @@ pub fn parse_fragment(
                         panic!("Tag not parsed: {}", std::str::from_utf8(e.name()).unwrap());
                     }
                 }
-                match new_tag {
-                    Some(t) => {
-                        container.push(t);
-                        container_len += 1;
-                    }
-                    None => {}
+                if let Some(t) = new_tag {
+                    container.push(t);
+                    container_len += 1;
                 }
             }
             Ok(Event::End(ref e)) => match e.name() {
@@ -93,6 +91,7 @@ pub fn parse_fragment(
                 b"gt" => close![Op],
                 b"lt" => close![Op],
                 b"ceiling" => close![Op],
+                b"floor" => close![Op],
                 b"piecewise" => close![Piecewise],
                 b"piece" => close![Piece],
                 b"otherwise" => close![Otherwise],

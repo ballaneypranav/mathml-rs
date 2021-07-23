@@ -31,8 +31,7 @@ impl Lambda {
             | MathNodeType::Cn
             | MathNodeType::Piece
             | MathNodeType::Otherwise => {
-                let error = format!("Can't have {} in a lambda function!", tag_type);
-                panic!(error);
+                panic!("Can't have {} in a lambda function!", tag_type);
             }
         }
     }

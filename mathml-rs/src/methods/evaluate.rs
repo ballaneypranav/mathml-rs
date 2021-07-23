@@ -7,7 +7,7 @@ use mathru::statistics::combins::factorial;
 use std::collections::HashMap;
 
 pub fn evaluate_node(
-    nodes: &Vec<MathNode>,
+    nodes: &[MathNode],
     head_idx: NodeIndex,
     values: &HashMap<String, f64>,
     functions: &HashMap<String, Vec<MathNode>>,
@@ -73,6 +73,13 @@ pub fn evaluate_node(
                         let a = evaluate_node(nodes, apply.operands[0], values, functions)?;
                         Ok(round::ceil(a, 0))
                     }
+                    Op::Floor => {
+                        if apply.operands.len() != 1 {
+                            return Err("Invalid number of operands.".to_string());
+                        }
+                        let a = evaluate_node(nodes, apply.operands[0], values, functions)?;
+                        Ok(round::floor(a, 0))
+                    }
                     Op::Factorial => {
                         if apply.operands.len() != 1 {
                             return Err("Invalid number of operands.".to_string());
@@ -130,7 +137,8 @@ pub fn evaluate_node(
                 //println!("Returning {} from ci", result);
                 Ok(result)
             } else {
-                Err("No value found!".to_string())
+                let error = format!("No value found for Ci {}", name);
+                Err(error)
             }
         }
         MathNode::Piecewise(..) => Ok(evaluate_piecewise(nodes, head_idx, values, functions)?),
@@ -142,13 +150,19 @@ pub fn evaluate_node(
 }
 
 pub fn evaluate_lambda(
-    nodes: &Vec<MathNode>,
+    nodes: &[MathNode],
     head_idx: NodeIndex,
-    argument_values: &Vec<f64>,
+    argument_values: &[f64],
     functions: &HashMap<String, Vec<MathNode>>,
 ) -> Result<f64, String> {
     let head = nodes[head_idx].clone();
     match head {
+        MathNode::Root(root) => {
+            if root.children.len() != 1 {
+                return Err("Root with multiple/zero children!".to_string());
+            }
+            evaluate_lambda(nodes, root.children[0], argument_values, functions)
+        }
         MathNode::Lambda(lambda) => {
             let mut argument_names = Vec::new();
             for binding in lambda.bindings {
@@ -178,13 +192,13 @@ pub fn evaluate_lambda(
         }
         _ => {
             //dbg!(head);
-            Err("haha couldn't parse".to_string())
+            Err("couldn't parse lambda".to_string())
         }
     }
 }
 
 pub fn evaluate_piecewise(
-    nodes: &Vec<MathNode>,
+    nodes: &[MathNode],
     head_idx: NodeIndex,
     values: &HashMap<String, f64>,
     functions: &HashMap<String, Vec<MathNode>>,
@@ -198,7 +212,7 @@ pub fn evaluate_piecewise(
             for piece_idx in pieces_idx {
                 let (condition, value) = evaluate_piece(nodes, piece_idx, values, functions)?;
                 if condition {
-                    if let Some(piece_result) = value {
+                    if let Some(..) = value {
                         result = value;
                         break;
                     }
@@ -206,17 +220,15 @@ pub fn evaluate_piecewise(
             }
             if let Some(value) = result {
                 Ok(value)
+            } else if let Some(otherwise_idx_value) = otherwise_idx {
+                Ok(evaluate_piecewise(
+                    nodes,
+                    otherwise_idx_value,
+                    values,
+                    functions,
+                )?)
             } else {
-                if let Some(otherwise_idx_value) = otherwise_idx {
-                    Ok(evaluate_piecewise(
-                        nodes,
-                        otherwise_idx_value,
-                        values,
-                        functions,
-                    )?)
-                } else {
-                    Err("All pieces evaluated to false and no otherwise branch found.".to_string())
-                }
+                Err("All pieces evaluated to false and no otherwise branch found.".to_string())
             }
         }
         MathNode::Otherwise(otherwise) => {
@@ -231,7 +243,7 @@ pub fn evaluate_piecewise(
 }
 
 pub fn evaluate_piece(
-    nodes: &Vec<MathNode>,
+    nodes: &[MathNode],
     head_idx: NodeIndex,
     values: &HashMap<String, f64>,
     functions: &HashMap<String, Vec<MathNode>>,
@@ -257,7 +269,7 @@ pub fn evaluate_piece(
 }
 
 pub fn evaluate_condition(
-    nodes: &Vec<MathNode>,
+    nodes: &[MathNode],
     head_idx: NodeIndex,
     values: &HashMap<String, f64>,
     functions: &HashMap<String, Vec<MathNode>>,
@@ -295,8 +307,12 @@ pub fn evaluate_condition(
                 if let Some(first_value) = a {
                     if let Some(second_value) = b {
                         match op {
-                            Op::Eq => result = Some(first_value == second_value),
-                            Op::Neq => result = Some(first_value != second_value),
+                            Op::Eq => {
+                                result = Some((first_value - second_value).abs() <= f64::EPSILON)
+                            }
+                            Op::Neq => {
+                                result = Some((first_value - second_value).abs() > f64::EPSILON)
+                            }
                             Op::Gt => result = Some(first_value > second_value),
                             Op::Lt => result = Some(first_value < second_value),
                             Op::Geq => result = Some(first_value >= second_value),

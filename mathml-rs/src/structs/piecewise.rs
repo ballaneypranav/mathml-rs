@@ -31,8 +31,7 @@ impl Piecewise {
             | MathNodeType::Lambda
             | MathNodeType::Piecewise
             | MathNodeType::Constant => {
-                let error = format!("Can't have {} in a piecewise function!", tag_type);
-                panic!(error);
+                panic!("Can't have {} in a piecewise function!", tag_type);
             }
         }
     }
@@ -105,8 +104,7 @@ impl Otherwise {
             | MathNodeType::Otherwise
             | MathNodeType::BVar
             | MathNodeType::Piece => {
-                let error = format!("Can't have {} in a \"otherwise\" branch!", tag_type);
-                panic!(error);
+                panic!("Can't have {} in an \"otherwise\" branch!", tag_type);
             }
         }
     }
