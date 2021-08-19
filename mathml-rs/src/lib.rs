@@ -54,11 +54,14 @@ pub fn parse_fragment(
                     b"lt" => attach![Op::Lt to Apply],
                     b"geq" => attach![Op::Geq to Apply],
                     b"leq" => attach![Op::Leq to Apply],
+                    b"and" => attach![Op::And to Apply],
+                    b"or" => attach![Op::Or to Apply],
+                    b"xor" => attach![Op::Xor to Apply],
                     b"ceiling" => attach![Op::Ceiling to Apply],
                     b"floor" => attach![Op::Floor to Apply],
                     b"true" => attach![Constant::True to Apply | Piece ],
                     b"false" => attach![Constant::False to Apply | Piece ],
-                    b"ci" => attach![Ci to Apply | BVar | Piece | Otherwise | Lambda ],
+                    b"ci" => attach![Ci to Root | Apply | BVar | Piece | Otherwise | Lambda ],
                     b"cn" => attach![Cn with
                                         r#type as NumType,
                                     to Root | Apply | BVar | Piece | Otherwise | Lambda ],
@@ -67,6 +70,7 @@ pub fn parse_fragment(
                     b"piecewise" => attach![Piecewise to Root | Apply | Lambda],
                     b"piece" => attach![Piece to Piecewise],
                     b"otherwise" => attach![Otherwise to Piecewise],
+                    b"sep" => new_tag = None,
                     _ => {
                         panic!("Tag not parsed: {}", std::str::from_utf8(e.name()).unwrap());
                     }
@@ -90,6 +94,9 @@ pub fn parse_fragment(
                 b"leq" => close![Op],
                 b"gt" => close![Op],
                 b"lt" => close![Op],
+                b"and" => close![Op],
+                b"or" => close![Op],
+                b"xor" => close![Op],
                 b"ceiling" => close![Op],
                 b"floor" => close![Op],
                 b"piecewise" => close![Piecewise],
@@ -119,6 +126,29 @@ pub fn parse_fragment(
                         Some(NumType::Integer) => {
                             let value = s.parse::<i32>().expect("Incorrect type");
                             cn.value = Some(Number::Integer(value));
+                        }
+                        Some(NumType::Rational) => {
+                            let value = s.parse::<i32>().expect("Incorrect type");
+                            if cn.value.is_none() {
+                                cn.value = Some(Number::Rational(value.into(), 1));
+                            } else if let Some(Number::Rational(x, y)) = cn.value {
+                                if y != 1 {
+                                    panic!("Error occurred while storing rational number.");
+                                }
+                                cn.value = Some(Number::Rational(x, value.into()));
+                            }
+                        }
+
+                        Some(NumType::ENotation) => {
+                            let value = s.parse::<i32>().expect("Incorrect type");
+                            if cn.value.is_none() {
+                                cn.value = Some(Number::ENotation(value.into(), 1));
+                            } else if let Some(Number::ENotation(x, y)) = cn.value {
+                                if y != 1 {
+                                    panic!("Error occurred while storing rational number.");
+                                }
+                                cn.value = Some(Number::ENotation(x, value.into()));
+                            }
                         }
                         _ => {
                             panic!("Math type did not match for cn: {:?}", cn);

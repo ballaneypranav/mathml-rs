@@ -13,6 +13,7 @@ pub fn evaluate_node(
     functions: &HashMap<String, Vec<MathNode>>,
 ) -> Result<f64, String> {
     let head = nodes[head_idx].clone();
+    //dbg!(values);
     match head {
         MathNode::Root(root) => {
             if root.children.len() != 1 {
@@ -99,9 +100,14 @@ pub fn evaluate_node(
                         for operand in apply.operands {
                             argument_values.push(evaluate_node(nodes, operand, values, functions)?);
                         }
-                        //println!("evaluating");
-                        res = Some(evaluate_lambda(lambda, 0, &argument_values, functions)?);
-                        //dbg!(res);
+                        res = Some(evaluate_lambda(
+                            lambda,
+                            0,
+                            &argument_values,
+                            values,
+                            functions,
+                        )?);
+                        //dbg!(lambda_name, res);
                     }
                 }
                 if let Some(value) = res {
@@ -124,6 +130,20 @@ pub fn evaluate_node(
             Some(NumType::Real) | None => {
                 if let Some(Number::Real(r)) = cn.value {
                     Ok(r)
+                } else {
+                    Err("Wrong type".to_string())
+                }
+            }
+            Some(NumType::Rational) => {
+                if let Some(Number::Rational(x, y)) = cn.value {
+                    Ok((x as f64) / (y as f64))
+                } else {
+                    Err("Wrong type".to_string())
+                }
+            }
+            Some(NumType::ENotation) => {
+                if let Some(Number::ENotation(x, y)) = cn.value {
+                    Ok(x * 10.0_f64.powf(y as f64))
                 } else {
                     Err("Wrong type".to_string())
                 }
@@ -153,6 +173,7 @@ pub fn evaluate_lambda(
     nodes: &[MathNode],
     head_idx: NodeIndex,
     argument_values: &[f64],
+    values: &HashMap<String, f64>,
     functions: &HashMap<String, Vec<MathNode>>,
 ) -> Result<f64, String> {
     let head = nodes[head_idx].clone();
@@ -161,7 +182,7 @@ pub fn evaluate_lambda(
             if root.children.len() != 1 {
                 return Err("Root with multiple/zero children!".to_string());
             }
-            evaluate_lambda(nodes, root.children[0], argument_values, functions)
+            evaluate_lambda(nodes, root.children[0], argument_values, values, functions)
         }
         MathNode::Lambda(lambda) => {
             let mut argument_names = Vec::new();
@@ -182,18 +203,11 @@ pub fn evaluate_lambda(
                 for i in 0..argument_values.len() {
                     assignments.insert(argument_names[i].clone(), argument_values[i]);
                 }
-                Ok(evaluate_node(
-                    nodes,
-                    lambda.expr.unwrap(),
-                    &assignments,
-                    functions,
-                )?)
+                let res = evaluate_node(nodes, lambda.expr.unwrap(), &assignments, functions)?;
+                Ok(res)
             }
         }
-        _ => {
-            //dbg!(head);
-            Err("couldn't parse lambda".to_string())
-        }
+        _ => evaluate_node(nodes, head_idx, values, functions),
     }
 }
 
@@ -292,40 +306,66 @@ pub fn evaluate_condition(
             let mut result = None;
             // If this is a regular mathematical operator, go ahead
             if let Ok(op) = op_result {
-                let mut a = None;
-                let mut b = None;
+                let mut operand_results = Vec::<f64>::new();
+                let mut child_condition_results = Vec::<bool>::new();
                 match op {
                     Op::Eq | Op::Neq | Op::Geq | Op::Leq | Op::Gt | Op::Lt => {
                         if apply.operands.len() != 2 {
                             return Err("Invalid number of operands.".to_string());
                         }
-                        a = Some(evaluate_node(nodes, apply.operands[0], values, functions)?);
-                        b = Some(evaluate_node(nodes, apply.operands[1], values, functions)?);
+                        for operand_location in apply.operands {
+                            operand_results.push(evaluate_node(
+                                nodes,
+                                operand_location,
+                                values,
+                                functions,
+                            )?);
+                        }
+                    }
+                    Op::And | Op::Or | Op::Xor => {
+                        for operand_location in apply.operands {
+                            child_condition_results.push(evaluate_condition(
+                                nodes,
+                                operand_location,
+                                values,
+                                functions,
+                            )?);
+                        }
                     }
                     _ => {}
                 }
-                if let Some(first_value) = a {
-                    if let Some(second_value) = b {
-                        match op {
-                            Op::Eq => {
-                                result = Some((first_value - second_value).abs() <= f64::EPSILON)
-                            }
-                            Op::Neq => {
-                                result = Some((first_value - second_value).abs() > f64::EPSILON)
-                            }
-                            Op::Gt => result = Some(first_value > second_value),
-                            Op::Lt => result = Some(first_value < second_value),
-                            Op::Geq => result = Some(first_value >= second_value),
-                            Op::Leq => result = Some(first_value <= second_value),
-                            _ => {}
-                        }
+
+                let condition_count = child_condition_results.len();
+                let true_count = child_condition_results.iter().filter(|x| **x).count();
+                match op {
+                    Op::Eq => {
+                        result =
+                            Some((operand_results[0] - operand_results[1]).abs() <= f64::EPSILON)
                     }
+                    Op::Neq => {
+                        result =
+                            Some((operand_results[0] - operand_results[1]).abs() > f64::EPSILON)
+                    }
+                    Op::Gt => result = Some(operand_results[0] > operand_results[1]),
+                    Op::Lt => result = Some(operand_results[0] < operand_results[1]),
+                    Op::Geq => result = Some(operand_results[0] >= operand_results[1]),
+                    Op::Leq => result = Some(operand_results[0] <= operand_results[1]),
+                    Op::And => result = Some(condition_count == true_count),
+                    Op::Or => result = Some(true_count > 0),
+                    Op::Xor => {
+                        result = Some(true_count % 2 == 1);
+                        //dbg!(child_condition_results);
+                        //if result.unwrap() {
+                        //dbg!(result.unwrap());
+                        //}
+                    }
+                    _ => {}
                 }
             }
             if let Some(value) = result {
                 Ok(value)
             } else {
-                Err("Invalid operator".to_string())
+                Err("Condition not supported".to_string())
             }
         }
         _ => {

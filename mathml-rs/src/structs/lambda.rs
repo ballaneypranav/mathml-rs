@@ -16,6 +16,8 @@ impl Lambda {
             | MathNodeType::Apply
             | MathNodeType::Lambda
             | MathNodeType::Piecewise
+            | MathNodeType::Ci
+            | MathNodeType::Cn
             | MathNodeType::Constant => {
                 if self.expr == None {
                     self.expr = Some(location);
@@ -26,11 +28,7 @@ impl Lambda {
             MathNodeType::BVar => {
                 self.bindings.push(location);
             }
-            MathNodeType::Root
-            | MathNodeType::Ci
-            | MathNodeType::Cn
-            | MathNodeType::Piece
-            | MathNodeType::Otherwise => {
+            MathNodeType::Root | MathNodeType::Piece | MathNodeType::Otherwise => {
                 panic!("Can't have {} in a lambda function!", tag_type);
             }
         }
