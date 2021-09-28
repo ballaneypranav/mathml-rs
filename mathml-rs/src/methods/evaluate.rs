@@ -88,6 +88,23 @@ pub fn evaluate_node(
                         let a = evaluate_node(nodes, apply.operands[0], values, functions)?;
                         Ok(factorial(a as u32) as f64)
                     }
+                    Op::And
+                    | Op::Or
+                    | Op::Xor
+                    | Op::Eq
+                    | Op::Neq
+                    | Op::Geq
+                    | Op::Leq
+                    | Op::Gt
+                    | Op::Lt => {
+                        let condition_result =
+                            evaluate_condition(nodes, head_idx, values, functions)?;
+                        if condition_result {
+                            Ok(1.0)
+                        } else {
+                            Ok(0.0)
+                        }
+                    }
                     _ => Err("Evaluation not supported for operator.".to_string()),
                 }
             } else {
@@ -305,7 +322,7 @@ pub fn evaluate_condition(
             let op_result = apply.get_op(nodes);
             let mut result = None;
             // If this is a regular mathematical operator, go ahead
-            if let Ok(op) = op_result {
+            if let Ok(op) = op_result.clone() {
                 let mut operand_results = Vec::<f64>::new();
                 let mut child_condition_results = Vec::<bool>::new();
                 match op {
@@ -315,20 +332,20 @@ pub fn evaluate_condition(
                                 return Err("Invalid number of operands.".to_string());
                             }
                         }
-                        for operand_location in apply.operands {
+                        for operand_location in &apply.operands {
                             operand_results.push(evaluate_node(
                                 nodes,
-                                operand_location,
+                                *operand_location,
                                 values,
                                 functions,
                             )?);
                         }
                     }
                     Op::And | Op::Or | Op::Xor => {
-                        for operand_location in apply.operands {
+                        for operand_location in &apply.operands {
                             child_condition_results.push(evaluate_condition(
                                 nodes,
-                                operand_location,
+                                *operand_location,
                                 values,
                                 functions,
                             )?);
@@ -410,6 +427,18 @@ pub fn evaluate_condition(
                         //dbg!(result.unwrap());
                         //}
                     }
+                    Op::Times
+                    | Op::Plus
+                    | Op::Minus
+                    | Op::Divide
+                    | Op::Power
+                    | Op::Ceiling
+                    | Op::Floor
+                    | Op::Factorial => {
+                        let evaluation_result = evaluate_node(nodes, head_idx, values, functions)?;
+                        // return true if evaluation_result != 0
+                        result = Some((evaluation_result - 0.0).abs() > f64::EPSILON);
+                    }
                     _ => {}
                 }
             }
@@ -418,6 +447,10 @@ pub fn evaluate_condition(
             } else {
                 Err("Condition not supported".to_string())
             }
+        }
+        MathNode::Cn(_) => {
+            let result = evaluate_node(nodes, head_idx, values, functions)?;
+            Ok(result != 0.0)
         }
         _ => {
             let error = format!("Couldn't evaluate operator {}", head);
