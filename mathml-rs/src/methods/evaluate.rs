@@ -105,7 +105,7 @@ pub fn evaluate_node(
                             Ok(0.0)
                         }
                     }
-                    _ => Err("Evaluation not supported for operator.".to_string()),
+                    _ => panic!("Evaluation not supported for operator."),
                 }
             } else {
                 // Evaluate as a lambda function
@@ -130,7 +130,7 @@ pub fn evaluate_node(
                 if let Some(value) = res {
                     Ok(value)
                 } else {
-                    Err("Invalid operator".to_string())
+                    panic!("Invalid operator");
                 }
             }
         }
@@ -141,31 +141,31 @@ pub fn evaluate_node(
                     //println!("Returning {} from cn", result);
                     Ok(result)
                 } else {
-                    Err("Wrong type".to_string())
+                    panic!("Wrong type");
                 }
             }
             Some(NumType::Real) | None => {
                 if let Some(Number::Real(r)) = cn.value {
                     Ok(r)
                 } else {
-                    Err("Wrong type".to_string())
+                    panic!("Wrong type");
                 }
             }
             Some(NumType::Rational) => {
                 if let Some(Number::Rational(x, y)) = cn.value {
                     Ok((x as f64) / (y as f64))
                 } else {
-                    Err("Wrong type".to_string())
+                    panic!("Wrong type");
                 }
             }
             Some(NumType::ENotation) => {
                 if let Some(Number::ENotation(x, y)) = cn.value {
                     Ok(x * 10.0_f64.powf(y as f64))
                 } else {
-                    Err("Wrong type".to_string())
+                    panic!("Wrong type");
                 }
             }
-            _ => Err("Invalid Cn type".to_string()),
+            _ => panic!("Wrong type"),
         },
         MathNode::Ci(ci) => {
             let name = ci.name.expect("Ci element with no content!");
@@ -179,9 +179,17 @@ pub fn evaluate_node(
             }
         }
         MathNode::Piecewise(..) => Ok(evaluate_piecewise(nodes, head_idx, values, functions)?),
+        MathNode::Constant(_) => {
+            let condition_result = evaluate_condition(nodes, head_idx, values, functions)?;
+            if condition_result {
+                Ok(1.0)
+            } else {
+                Ok(0.0)
+            }
+        }
+
         _ => {
-            let error = format!("Couldn't evaluate operator {}", head);
-            Err(error)
+            panic!("Couldn't evaluate operator {}", head);
         }
     }
 }
@@ -268,7 +276,7 @@ pub fn evaluate_piecewise(
         }
         _ => {
             //dbg!(head);
-            Err("haha couldn't parse".to_string())
+            panic!("haha couldn't parse");
         }
     }
 }
@@ -293,8 +301,7 @@ pub fn evaluate_piece(
             }
         }
         _ => {
-            //dbg!(head);
-            Err("haha couldn't parse".to_string())
+            panic!("haha couldn't parse");
         }
     }
 }
@@ -312,10 +319,10 @@ pub fn evaluate_condition(
                 match constant {
                     Constant::False => Ok(false),
                     Constant::True => Ok(true),
-                    _ => Err("haha".to_string()),
+                    _ => panic!("haha"),
                 }
             } else {
-                Err("hh".to_string())
+                panic!("hh");
             }
         }
         MathNode::Apply(apply) => {
@@ -422,10 +429,6 @@ pub fn evaluate_condition(
                     Op::Or => result = Some(true_count > 0),
                     Op::Xor => {
                         result = Some(true_count % 2 == 1);
-                        //dbg!(child_condition_results);
-                        //if result.unwrap() {
-                        //dbg!(result.unwrap());
-                        //}
                     }
                     Op::Times
                     | Op::Plus
@@ -445,16 +448,12 @@ pub fn evaluate_condition(
             if let Some(value) = result {
                 Ok(value)
             } else {
-                Err("Condition not supported".to_string())
+                panic!("Condition not supported");
             }
         }
-        MathNode::Cn(_) => {
+        _ => {
             let result = evaluate_node(nodes, head_idx, values, functions)?;
             Ok(result != 0.0)
-        }
-        _ => {
-            let error = format!("Couldn't evaluate operator {}", head);
-            Err(error)
         }
     }
 }
