@@ -310,8 +310,10 @@ pub fn evaluate_condition(
                 let mut child_condition_results = Vec::<bool>::new();
                 match op {
                     Op::Eq | Op::Neq | Op::Geq | Op::Leq | Op::Gt | Op::Lt => {
-                        if apply.operands.len() != 2 {
-                            return Err("Invalid number of operands.".to_string());
+                        if Op::Neq == op {
+                            if apply.operands.len() != 2 {
+                                return Err("Invalid number of operands.".to_string());
+                            }
                         }
                         for operand_location in apply.operands {
                             operand_results.push(evaluate_node(
@@ -339,17 +341,66 @@ pub fn evaluate_condition(
                 let true_count = child_condition_results.iter().filter(|x| **x).count();
                 match op {
                     Op::Eq => {
-                        result =
-                            Some((operand_results[0] - operand_results[1]).abs() <= f64::EPSILON)
+                        let mut x = true;
+                        for i in 1..operand_results.len() {
+                            let current =
+                                (operand_results[i - 1] - operand_results[i]).abs() <= f64::EPSILON;
+                            x = x && current;
+                            if !x {
+                                break;
+                            }
+                        }
+                        result = Some(x);
                     }
                     Op::Neq => {
-                        result =
-                            Some((operand_results[0] - operand_results[1]).abs() > f64::EPSILON)
+                        let current =
+                            (operand_results[0] - operand_results[1]).abs() > f64::EPSILON;
+                        result = Some(current);
                     }
-                    Op::Gt => result = Some(operand_results[0] > operand_results[1]),
-                    Op::Lt => result = Some(operand_results[0] < operand_results[1]),
-                    Op::Geq => result = Some(operand_results[0] >= operand_results[1]),
-                    Op::Leq => result = Some(operand_results[0] <= operand_results[1]),
+                    Op::Gt => {
+                        let mut x = true;
+                        for i in 1..operand_results.len() {
+                            let current = operand_results[i - 1] > operand_results[i];
+                            x = x && current;
+                            if !x {
+                                break;
+                            }
+                        }
+                        result = Some(x);
+                    }
+                    Op::Lt => {
+                        let mut x = true;
+                        for i in 1..operand_results.len() {
+                            let current = operand_results[i - 1] < operand_results[i];
+                            x = x && current;
+                            if !x {
+                                break;
+                            }
+                        }
+                        result = Some(x);
+                    }
+                    Op::Geq => {
+                        let mut x = true;
+                        for i in 1..operand_results.len() {
+                            let current = operand_results[i - 1] >= operand_results[i];
+                            x = x && current;
+                            if !x {
+                                break;
+                            }
+                        }
+                        result = Some(x);
+                    }
+                    Op::Leq => {
+                        let mut x = true;
+                        for i in 1..operand_results.len() {
+                            let current = operand_results[i - 1] <= operand_results[i];
+                            x = x && current;
+                            if !x {
+                                break;
+                            }
+                        }
+                        result = Some(x);
+                    }
                     Op::And => result = Some(condition_count == true_count),
                     Op::Or => result = Some(true_count > 0),
                     Op::Xor => {
