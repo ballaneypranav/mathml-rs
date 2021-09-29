@@ -88,9 +88,151 @@ pub fn evaluate_node(
                         let a = evaluate_node(nodes, apply.operands[0], values, functions)?;
                         Ok(factorial(a as u32) as f64)
                     }
+                    Op::Quotient => {
+                        if apply.operands.len() != 2 {
+                            return Err("Invalid number of operands.".to_string());
+                        }
+                        let a = evaluate_node(nodes, apply.operands[0], values, functions)?;
+                        let b = evaluate_node(nodes, apply.operands[1], values, functions)?;
+                        Ok(((a as i32) / (b as i32)) as f64)
+                    }
+                    Op::Rem => {
+                        if apply.operands.len() != 2 {
+                            return Err("Invalid number of operands.".to_string());
+                        }
+                        let a = evaluate_node(nodes, apply.operands[0], values, functions)?;
+                        let b = evaluate_node(nodes, apply.operands[1], values, functions)?;
+                        Ok(((a as i32) % (b as i32)) as f64)
+                    }
+                    Op::Min => {
+                        let mut min_result = f64::MAX;
+                        for i in 0..apply.operands.len() {
+                            let current =
+                                evaluate_node(nodes, apply.operands[i], values, functions)?;
+                            min_result = f64::min(min_result, current);
+                        }
+                        Ok(min_result)
+                    }
+                    Op::Max => {
+                        let mut max_result = f64::MIN;
+                        for i in 0..apply.operands.len() {
+                            let current =
+                                evaluate_node(nodes, apply.operands[i], values, functions)?;
+                            max_result = f64::max(max_result, current);
+                        }
+                        Ok(max_result)
+                    }
+                    Op::Exp => {
+                        if apply.operands.len() != 1 {
+                            return Err("Invalid number of operands.".to_string());
+                        }
+                        let a = evaluate_node(nodes, apply.operands[0], values, functions)?;
+                        Ok(a.exp())
+                    }
+                    Op::Ln => {
+                        if apply.operands.len() != 1 {
+                            return Err("Invalid number of operands.".to_string());
+                        }
+                        let a = evaluate_node(nodes, apply.operands[0], values, functions)?;
+                        Ok(a.ln())
+                    }
+                    // TRIGONOMETRIC FUNCTIONS
+                    Op::Sin
+                    | Op::Cos
+                    | Op::Tan
+                    | Op::Sec
+                    | Op::Csc
+                    | Op::Cot
+                    | Op::Sinh
+                    | Op::Cosh
+                    | Op::Tanh
+                    | Op::Sech
+                    | Op::Csch
+                    | Op::Coth
+                    | Op::Arcsin
+                    | Op::Arccos
+                    | Op::Arctan
+                    | Op::Arcsec
+                    | Op::Arccsc
+                    | Op::Arccot
+                    | Op::Arcsinh
+                    | Op::Arccosh
+                    | Op::Arctanh
+                    | Op::Arcsech
+                    | Op::Arccsch
+                    | Op::Arccoth => {
+                        if apply.operands.len() != 1 {
+                            return Err("Invalid number of operands.".to_string());
+                        }
+                        let a = evaluate_node(nodes, apply.operands[0], values, functions)?;
+
+                        if op == Op::Sin {
+                            Ok(a.sin())
+                        } else if op == Op::Cos {
+                            Ok(a.cos())
+                        } else if op == Op::Tan {
+                            Ok(a.tan())
+                        } else if op == Op::Sec {
+                            Ok(1.0 / a.cos())
+                        } else if op == Op::Csc {
+                            Ok(1.0 / a.sin())
+                        } else if op == Op::Cot {
+                            Ok(1.0 / a.tan())
+                        } else if op == Op::Sinh {
+                            Ok(a.sinh())
+                        } else if op == Op::Cosh {
+                            Ok(a.cosh())
+                        } else if op == Op::Tanh {
+                            Ok(a.tanh())
+                        } else if op == Op::Sech {
+                            Ok(1.0 / a.cosh())
+                        } else if op == Op::Csch {
+                            Ok(1.0 / a.sinh())
+                        } else if op == Op::Coth {
+                            Ok(1.0 / a.tanh())
+                        } else if op == Op::Arcsin {
+                            Ok(a.asin())
+                        } else if op == Op::Arccos {
+                            Ok(a.acos())
+                        } else if op == Op::Arctan {
+                            Ok(a.atan())
+                        } else if op == Op::Arcsec {
+                            Ok((1.0 / a).acos())
+                        } else if op == Op::Arccsc {
+                            Ok((1.0 / a).asin())
+                        } else if op == Op::Arccot {
+                            if a > 0.0 {
+                                Ok((1.0 / a).atan())
+                            } else {
+                                Ok(std::f64::consts::PI + (1.0 / a).atan())
+                            }
+                        } else if op == Op::Arcsinh {
+                            Ok(a.asinh())
+                        } else if op == Op::Arccosh {
+                            Ok(a.acosh())
+                        } else if op == Op::Arctanh {
+                            Ok(a.atanh())
+                        } else if op == Op::Arcsech {
+                            Ok(1.0 / a.acosh())
+                        } else if op == Op::Arccsch {
+                            Ok(1.0 / a.asinh())
+                        } else if op == Op::Arccoth {
+                            Ok(1.0 / a.atanh())
+                        } else {
+                            Err("Invalid trig operator.".to_string())
+                        }
+                    }
+                    Op::Abs => {
+                        if apply.operands.len() != 1 {
+                            return Err("Invalid number of operands.".to_string());
+                        }
+                        let a = evaluate_node(nodes, apply.operands[0], values, functions)?;
+                        Ok(a.abs())
+                    }
                     Op::And
                     | Op::Or
                     | Op::Xor
+                    | Op::Implies
                     | Op::Eq
                     | Op::Neq
                     | Op::Geq
@@ -179,14 +321,13 @@ pub fn evaluate_node(
             }
         }
         MathNode::Piecewise(..) => Ok(evaluate_piecewise(nodes, head_idx, values, functions)?),
-        MathNode::Constant(_) => {
-            let condition_result = evaluate_condition(nodes, head_idx, values, functions)?;
-            if condition_result {
-                Ok(1.0)
-            } else {
-                Ok(0.0)
-            }
-        }
+        MathNode::Constant(constant_node) => match constant_node.constant {
+            Some(Constant::Pi) => Ok(std::f64::consts::PI),
+            Some(Constant::ExponentialE) => Ok(std::f64::consts::E),
+            Some(Constant::True) => Ok(1.0),
+            Some(Constant::False) => Ok(0.0),
+            _ => Err("Invalid constant".to_string()),
+        },
 
         _ => {
             panic!("Couldn't evaluate operator {}", head);
@@ -358,6 +499,32 @@ pub fn evaluate_condition(
                             )?);
                         }
                     }
+                    Op::Not => {
+                        if apply.operands.len() != 1 {
+                            return Err("Invalid number of operands.".to_string());
+                        }
+                        for operand_location in &apply.operands {
+                            child_condition_results.push(evaluate_condition(
+                                nodes,
+                                *operand_location,
+                                values,
+                                functions,
+                            )?);
+                        }
+                    }
+                    Op::Implies => {
+                        if apply.operands.len() != 2 {
+                            return Err("Invalid number of operands.".to_string());
+                        }
+                        for operand_location in &apply.operands {
+                            child_condition_results.push(evaluate_condition(
+                                nodes,
+                                *operand_location,
+                                values,
+                                functions,
+                            )?);
+                        }
+                    }
                     _ => {}
                 }
 
@@ -429,6 +596,16 @@ pub fn evaluate_condition(
                     Op::Or => result = Some(true_count > 0),
                     Op::Xor => {
                         result = Some(true_count % 2 == 1);
+                    }
+                    Op::Implies => {
+                        // It evaluates to false if
+                        //      the first argument is true and
+                        //      the second argument is false,
+                        // otherwise it evaluates to true.
+                        result = Some(!(child_condition_results[0] && !child_condition_results[1]));
+                    }
+                    Op::Not => {
+                        result = Some(!(child_condition_results[0]));
                     }
                     Op::Times
                     | Op::Plus

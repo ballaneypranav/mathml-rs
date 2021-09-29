@@ -48,6 +48,39 @@ pub fn parse_fragment(
                     b"plus" => attach![Op::Plus to Apply],
                     b"power" => attach![Op::Power to Apply],
                     b"factorial" => attach![Op::Factorial to Apply],
+                    b"quotient" => attach![Op::Quotient to Apply],
+                    b"rem" => attach![Op::Rem to Apply],
+                    b"max" => attach![Op::Max to Apply],
+                    b"min" => attach![Op::Min to Apply],
+                    b"exp" => attach![Op::Exp to Apply],
+                    b"ln" => attach![Op::Ln to Apply],
+
+                    b"sin" => attach![Op::Sin to Apply],
+                    b"cos" => attach![Op::Cos to Apply],
+                    b"tan" => attach![Op::Tan to Apply],
+                    b"sec" => attach![Op::Sec to Apply],
+                    b"csc" => attach![Op::Csc to Apply],
+                    b"cot" => attach![Op::Cot to Apply],
+                    b"sinh" => attach![Op::Sinh to Apply],
+                    b"cosh" => attach![Op::Cosh to Apply],
+                    b"tanh" => attach![Op::Tanh to Apply],
+                    b"sech" => attach![Op::Sech to Apply],
+                    b"csch" => attach![Op::Csch to Apply],
+                    b"coth" => attach![Op::Coth to Apply],
+                    b"arcsin" => attach![Op::Arcsin to Apply],
+                    b"arccos" => attach![Op::Arccos to Apply],
+                    b"arctan" => attach![Op::Arctan to Apply],
+                    b"arcsec" => attach![Op::Arcsec to Apply],
+                    b"arccsc" => attach![Op::Arccsc to Apply],
+                    b"arccot" => attach![Op::Arccot to Apply],
+                    b"arcsinh" => attach![Op::Arcsinh to Apply],
+                    b"arccosh" => attach![Op::Arccosh to Apply],
+                    b"arctanh" => attach![Op::Arctanh to Apply],
+                    b"arcsech" => attach![Op::Arcsech to Apply],
+                    b"arccsch" => attach![Op::Arccsch to Apply],
+                    b"arccoth" => attach![Op::Arccoth to Apply],
+
+                    b"abs" => attach![Op::Abs to Apply],
                     b"eq" => attach![Op::Eq to Apply],
                     b"neq" => attach![Op::Neq to Apply],
                     b"gt" => attach![Op::Gt to Apply],
@@ -56,12 +89,18 @@ pub fn parse_fragment(
                     b"leq" => attach![Op::Leq to Apply],
                     b"and" => attach![Op::And to Apply],
                     b"or" => attach![Op::Or to Apply],
+                    b"not" => attach![Op::Not to Apply],
                     b"xor" => attach![Op::Xor to Apply],
+                    b"implies" => attach![Op::Implies to Apply],
                     b"ceiling" => attach![Op::Ceiling to Apply],
                     b"floor" => attach![Op::Floor to Apply],
                     b"true" => attach![Constant::True to Apply | Piece ],
                     b"false" => attach![Constant::False to Apply | Piece | Otherwise],
-                    b"ci" => attach![Ci to Root | Apply | BVar | Piece | Otherwise | Lambda ],
+                    b"pi" => attach![Constant::Pi to Apply | Piece | Lambda ],
+                    b"exponentiale" => attach![Constant::ExponentialE to Apply | Piece | Lambda ],
+                    b"ci" => {
+                        attach![Ci to Root | Apply | BVar | Piece | Otherwise | Lambda ]
+                    }
                     b"cn" => attach![Cn with
                                         r#type as NumType,
                                     to Root | Apply | BVar | Piece | Otherwise | Lambda ],
@@ -88,6 +127,39 @@ pub fn parse_fragment(
                 b"plus" => close![Op],
                 b"power" => close![Op],
                 b"factorial" => close![Op],
+                b"quotient" => close![Op],
+                b"rem" => close![Op],
+                b"max" => close![Op],
+                b"min" => close![Op],
+                b"exp" => close![Op],
+                b"ln" => close![Op],
+
+                b"sin" => close![Op],
+                b"cos" => close![Op],
+                b"tan" => close![Op],
+                b"sec" => close![Op],
+                b"csc" => close![Op],
+                b"cot" => close![Op],
+                b"sinh" => close![Op],
+                b"cosh" => close![Op],
+                b"tanh" => close![Op],
+                b"sech" => close![Op],
+                b"csch" => close![Op],
+                b"coth" => close![Op],
+                b"arcsin" => close![Op],
+                b"arccos" => close![Op],
+                b"arctan" => close![Op],
+                b"arcsec" => close![Op],
+                b"arccsc" => close![Op],
+                b"arccot" => close![Op],
+                b"arcsinh" => close![Op],
+                b"arccosh" => close![Op],
+                b"arctanh" => close![Op],
+                b"arcsech" => close![Op],
+                b"arccsch" => close![Op],
+                b"arccoth" => close![Op],
+
+                b"abs" => close![Op],
                 b"eq" => close![Op],
                 b"neq" => close![Op],
                 b"geq" => close![Op],
@@ -95,8 +167,10 @@ pub fn parse_fragment(
                 b"gt" => close![Op],
                 b"lt" => close![Op],
                 b"and" => close![Op],
+                b"not" => close![Op],
                 b"or" => close![Op],
                 b"xor" => close![Op],
+                b"implies" => close![Op],
                 b"ceiling" => close![Op],
                 b"floor" => close![Op],
                 b"piecewise" => close![Piecewise],
@@ -104,6 +178,8 @@ pub fn parse_fragment(
                 b"otherwise" => close![Otherwise],
                 b"true" => close![Constant],
                 b"false" => close![Constant],
+                b"pi" => close![Constant],
+                b"exponentiale" => close![Constant],
                 b"ci" => close![Ci],
                 b"cn" => close![Cn],
                 b"lambda" => close![Lambda],
@@ -140,14 +216,14 @@ pub fn parse_fragment(
                         }
 
                         Some(NumType::ENotation) => {
-                            let value = s.parse::<i32>().expect("Incorrect type");
+                            let value = s.parse::<f64>().expect("Incorrect type");
                             if cn.value.is_none() {
                                 cn.value = Some(Number::ENotation(value.into(), 1));
                             } else if let Some(Number::ENotation(x, y)) = cn.value {
                                 if y != 1 {
                                     panic!("Error occurred while storing rational number.");
                                 }
-                                cn.value = Some(Number::ENotation(x, value.into()));
+                                cn.value = Some(Number::ENotation(x, value as i64));
                             }
                         }
                         _ => {

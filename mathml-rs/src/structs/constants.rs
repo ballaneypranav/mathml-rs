@@ -23,6 +23,7 @@ pub enum Constant {
     True,
     False,
     Pi,
+    ExponentialE,
     EulerGamma,
     Infinity,
 }
